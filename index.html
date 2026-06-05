@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fanbase — Live Sports Hub</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body,#root{min-height:100%}
+body{background:#080808;color:#f0ece4;font-family:'DM Sans',Georgia,sans-serif}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:#111}::-webkit-scrollbar-thumb{background:#2e2e2e;border-radius:2px}
+@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes flipIn{0%{opacity:0;transform:rotateY(-90deg) scale(.96)}60%{transform:rotateY(8deg)}100%{opacity:1;transform:rotateY(0) scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.tc{transition:all .15s;cursor:pointer}.tc:hover{transform:translateY(-2px)}
+.qo{transition:all .13s;cursor:pointer}.qo:hover{border-color:#c8102e!important;background:#1a0808!important;color:#fff!important}
+.sp{transition:all .12s;cursor:pointer}
+.tb{transition:all .12s;cursor:pointer}
+.tip{cursor:pointer}
+.nav-btn{transition:all .12s;cursor:pointer;border:none;background:none}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:pulse 1.4s ease infinite;display:inline-block;flex-shrink:0}
+.skeleton{background:linear-gradient(90deg,#1a1a1a 25%,#242424 50%,#1a1a1a 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px}
+input::placeholder{color:#555}
+input:focus{outline:none;border-color:#444!important}
+a{color:inherit;text-decoration:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect,useRef,useCallback}=React;
+const PROXY="https://sports-proxy-a8md.onrender.com";
+const FAV_KEY="fanbase_favs";
+
+// ── CONSTANTS ─────────────────────────────────────────────────────────────────
+
+const LIVE_SPORTS=[
+  {key:"nba",  label:"NBA", espn:"basketball/nba",  color:"#f97316"},
+  {key:"mlb",  label:"MLB", espn:"baseball/mlb",    color:"#22c55e"},
+  {key:"nhl",  label:"NHL", espn:"hockey/nhl",      color:"#60a5fa"},
+  {key:"nfl",  label:"NFL", espn:"football/nfl",    color:"#a78bfa"},
+  {key:"fc",   label:"FC",  espn:"soccer/usa.1",    color:"#fb7185"},
+];
+
+const ALL_TEAMS=[
+  {name:"Arizona Cardinals",     sport:"NFL",emoji:"🏈",color:"#97233F",accent:"#FFB612",espn:"football/nfl",id:22},
+  {name:"Atlanta Falcons",       sport:"NFL",emoji:"🏈",color:"#A71930",accent:"#A5ACAF",espn:"football/nfl",id:1},
+  {name:"Baltimore Ravens",      sport:"NFL",emoji:"🏈",color:"#241773",accent:"#9E7C0C",espn:"football/nfl",id:33},
+  {name:"Buffalo Bills",         sport:"NFL",emoji:"🏈",color:"#00338D",accent:"#C60C30",espn:"football/nfl",id:2},
+  {name:"Carolina Panthers",     sport:"NFL",emoji:"🏈",color:"#0085CA",accent:"#BFC0BF",espn:"football/nfl",id:29},
+  {name:"Chicago Bears",         sport:"NFL",emoji:"🏈",color:"#0B162A",accent:"#C83803",espn:"football/nfl",id:3},
+  {name:"Cincinnati Bengals",    sport:"NFL",emoji:"🏈",color:"#FB4F14",accent:"#000000",espn:"football/nfl",id:4},
+  {name:"Cleveland Browns",      sport:"NFL",emoji:"🏈",color:"#311D00",accent:"#FF3C00",espn:"football/nfl",id:5},
+  {name:"Dallas Cowboys",        sport:"NFL",emoji:"🏈",color:"#003594",accent:"#869397",espn:"football/nfl",id:6},
+  {name:"Denver Broncos",        sport:"NFL",emoji:"🏈",color:"#FB4F14",accent:"#002244",espn:"football/nfl",id:7},
+  {name:"Detroit Lions",         sport:"NFL",emoji:"🏈",color:"#0076B6",accent:"#B0B7BC",espn:"football/nfl",id:8},
+  {name:"Green Bay Packers",     sport:"NFL",emoji:"🏈",color:"#203731",accent:"#FFB612",espn:"football/nfl",id:9},
+  {name:"Houston Texans",        sport:"NFL",emoji:"🏈",color:"#03202F",accent:"#A71930",espn:"football/nfl",id:34},
+  {name:"Indianapolis Colts",    sport:"NFL",emoji:"🏈",color:"#002C5F",accent:"#A2AAAD",espn:"football/nfl",id:11},
+  {name:"Jacksonville Jaguars",  sport:"NFL",emoji:"🏈",color:"#006778",accent:"#9F792C",espn:"football/nfl",id:30},
+  {name:"Kansas City Chiefs",    sport:"NFL",emoji:"🏈",color:"#E31837",accent:"#FFB81C",espn:"football/nfl",id:12},
+  {name:"Las Vegas Raiders",     sport:"NFL",emoji:"🏈",color:"#000000",accent:"#A5ACAF",espn:"football/nfl",id:13},
+  {name:"Los Angeles Chargers",  sport:"NFL",emoji:"🏈",color:"#0080C6",accent:"#FFC20E",espn:"football/nfl",id:24},
+  {name:"Los Angeles Rams",      sport:"NFL",emoji:"🏈",color:"#003594",accent:"#FFA300",espn:"football/nfl",id:14},
+  {name:"Miami Dolphins",        sport:"NFL",emoji:"🏈",color:"#008E97",accent:"#FC4C02",espn:"football/nfl",id:15},
+  {name:"Minnesota Vikings",     sport:"NFL",emoji:"🏈",color:"#4F2683",accent:"#FFC62F",espn:"football/nfl",id:16},
+  {name:"New England Patriots",  sport:"NFL",emoji:"🏈",color:"#002244",accent:"#C60C30",espn:"football/nfl",id:17},
+  {name:"New Orleans Saints",    sport:"NFL",emoji:"🏈",color:"#D3BC8D",accent:"#101820",espn:"football/nfl",id:18},
+  {name:"New York Giants",       sport:"NFL",emoji:"🏈",color:"#0B2265",accent:"#A71930",espn:"football/nfl",id:19},
+  {name:"New York Jets",         sport:"NFL",emoji:"🏈",color:"#125740",accent:"#FFFFFF",espn:"football/nfl",id:20},
+  {name:"Philadelphia Eagles",   sport:"NFL",emoji:"🏈",color:"#004C54",accent:"#A5ACAF",espn:"football/nfl",id:21},
+  {name:"Pittsburgh Steelers",   sport:"NFL",emoji:"🏈",color:"#FFB612",accent:"#101820",espn:"football/nfl",id:23},
+  {name:"San Francisco 49ers",   sport:"NFL",emoji:"🏈",color:"#AA0000",accent:"#B3995D",espn:"football/nfl",id:25},
+  {name:"Seattle Seahawks",      sport:"NFL",emoji:"🏈",color:"#002244",accent:"#69BE28",espn:"football/nfl",id:26},
+  {name:"Tampa Bay Buccaneers",  sport:"NFL",emoji:"🏈",color:"#D50A0A",accent:"#FF7900",espn:"football/nfl",id:27},
+  {name:"Tennessee Titans",      sport:"NFL",emoji:"🏈",color:"#0C2340",accent:"#4B92DB",espn:"football/nfl",id:10},
+  {name:"Washington Commanders", sport:"NFL",emoji:"🏈",color:"#5A1414",accent:"#FFB612",espn:"football/nfl",id:28},
+  {name:"Arizona Diamondbacks",  sport:"MLB",emoji:"⚾",color:"#A71930",accent:"#E3D4AD",espn:"baseball/mlb",id:29},
+  {name:"Atlanta Braves",        sport:"MLB",emoji:"⚾",color:"#CE1141",accent:"#13274F",espn:"baseball/mlb",id:15},
+  {name:"Baltimore Orioles",     sport:"MLB",emoji:"⚾",color:"#DF4601",accent:"#27251F",espn:"baseball/mlb",id:1},
+  {name:"Boston Red Sox",        sport:"MLB",emoji:"⚾",color:"#BD3039",accent:"#0D2B56",espn:"baseball/mlb",id:2},
+  {name:"Chicago Cubs",          sport:"MLB",emoji:"⚾",color:"#0E3386",accent:"#CC3433",espn:"baseball/mlb",id:16},
+  {name:"Chicago White Sox",     sport:"MLB",emoji:"⚾",color:"#27251F",accent:"#C4CED4",espn:"baseball/mlb",id:4},
+  {name:"Cincinnati Reds",       sport:"MLB",emoji:"⚾",color:"#C6011F",accent:"#000000",espn:"baseball/mlb",id:17},
+  {name:"Cleveland Guardians",   sport:"MLB",emoji:"⚾",color:"#00385D",accent:"#E50022",espn:"baseball/mlb",id:5},
+  {name:"Colorado Rockies",      sport:"MLB",emoji:"⚾",color:"#33006F",accent:"#C4CED4",espn:"baseball/mlb",id:27},
+  {name:"Detroit Tigers",        sport:"MLB",emoji:"⚾",color:"#0C2340",accent:"#FA4616",espn:"baseball/mlb",id:6},
+  {name:"Houston Astros",        sport:"MLB",emoji:"⚾",color:"#002D62",accent:"#EB6E1F",espn:"baseball/mlb",id:18},
+  {name:"Kansas City Royals",    sport:"MLB",emoji:"⚾",color:"#004687",accent:"#C09A5B",espn:"baseball/mlb",id:7},
+  {name:"Los Angeles Angels",    sport:"MLB",emoji:"⚾",color:"#BA0021",accent:"#003263",espn:"baseball/mlb",id:3},
+  {name:"Los Angeles Dodgers",   sport:"MLB",emoji:"⚾",color:"#005A9C",accent:"#EF3E42",espn:"baseball/mlb",id:19},
+  {name:"Miami Marlins",         sport:"MLB",emoji:"⚾",color:"#00A3E0",accent:"#EF3340",espn:"baseball/mlb",id:28},
+  {name:"Milwaukee Brewers",     sport:"MLB",emoji:"⚾",color:"#FFC52F",accent:"#12284B",espn:"baseball/mlb",id:8},
+  {name:"Minnesota Twins",       sport:"MLB",emoji:"⚾",color:"#002B5C",accent:"#D31145",espn:"baseball/mlb",id:9},
+  {name:"New York Mets",         sport:"MLB",emoji:"⚾",color:"#002D72",accent:"#FF5910",espn:"baseball/mlb",id:21},
+  {name:"New York Yankees",      sport:"MLB",emoji:"⚾",color:"#003087",accent:"#C4CED4",espn:"baseball/mlb",id:10},
+  {name:"Oakland Athletics",     sport:"MLB",emoji:"⚾",color:"#003831",accent:"#EFB21E",espn:"baseball/mlb",id:11},
+  {name:"Philadelphia Phillies", sport:"MLB",emoji:"⚾",color:"#E81828",accent:"#002D72",espn:"baseball/mlb",id:22},
+  {name:"Pittsburgh Pirates",    sport:"MLB",emoji:"⚾",color:"#27251F",accent:"#FDB827",espn:"baseball/mlb",id:23},
+  {name:"San Diego Padres",      sport:"MLB",emoji:"⚾",color:"#2F241D",accent:"#FFC425",espn:"baseball/mlb",id:25},
+  {name:"San Francisco Giants",  sport:"MLB",emoji:"⚾",color:"#FD5A1E",accent:"#27251F",espn:"baseball/mlb",id:26},
+  {name:"Seattle Mariners",      sport:"MLB",emoji:"⚾",color:"#0C2C56",accent:"#005C5C",espn:"baseball/mlb",id:12},
+  {name:"St. Louis Cardinals",   sport:"MLB",emoji:"⚾",color:"#C41E3A",accent:"#FEDB00",espn:"baseball/mlb",id:24},
+  {name:"Tampa Bay Rays",        sport:"MLB",emoji:"⚾",color:"#092C5C",accent:"#8FBCE6",espn:"baseball/mlb",id:30},
+  {name:"Texas Rangers",         sport:"MLB",emoji:"⚾",color:"#003278",accent:"#C0111F",espn:"baseball/mlb",id:13},
+  {name:"Toronto Blue Jays",     sport:"MLB",emoji:"⚾",color:"#134A8E",accent:"#1D2D5C",espn:"baseball/mlb",id:14},
+  {name:"Washington Nationals",  sport:"MLB",emoji:"⚾",color:"#AB0003",accent:"#14225A",espn:"baseball/mlb",id:20},
+  {name:"Atlanta Hawks",         sport:"NBA",emoji:"🏀",color:"#C1D32F",accent:"#E03A3E",espn:"basketball/nba",id:1},
+  {name:"Boston Celtics",        sport:"NBA",emoji:"🏀",color:"#007A33",accent:"#BA9653",espn:"basketball/nba",id:2},
+  {name:"Brooklyn Nets",         sport:"NBA",emoji:"🏀",color:"#000000",accent:"#FFFFFF",espn:"basketball/nba",id:17},
+  {name:"Charlotte Hornets",     sport:"NBA",emoji:"🏀",color:"#1D1160",accent:"#00788C",espn:"basketball/nba",id:30},
+  {name:"Chicago Bulls",         sport:"NBA",emoji:"🏀",color:"#CE1141",accent:"#000000",espn:"basketball/nba",id:4},
+  {name:"Cleveland Cavaliers",   sport:"NBA",emoji:"🏀",color:"#860038",accent:"#FDBB30",espn:"basketball/nba",id:5},
+  {name:"Dallas Mavericks",      sport:"NBA",emoji:"🏀",color:"#00538C",accent:"#002B5E",espn:"basketball/nba",id:6},
+  {name:"Denver Nuggets",        sport:"NBA",emoji:"🏀",color:"#0E2240",accent:"#FEC524",espn:"basketball/nba",id:7},
+  {name:"Detroit Pistons",       sport:"NBA",emoji:"🏀",color:"#C8102E",accent:"#006BB6",espn:"basketball/nba",id:8},
+  {name:"Golden State Warriors", sport:"NBA",emoji:"🏀",color:"#1D428A",accent:"#FFC72C",espn:"basketball/nba",id:9},
+  {name:"Houston Rockets",       sport:"NBA",emoji:"🏀",color:"#CE1141",accent:"#C4CED4",espn:"basketball/nba",id:10},
+  {name:"Indiana Pacers",        sport:"NBA",emoji:"🏀",color:"#002D62",accent:"#FDBB30",espn:"basketball/nba",id:11},
+  {name:"Los Angeles Clippers",  sport:"NBA",emoji:"🏀",color:"#C8102E",accent:"#1D428A",espn:"basketball/nba",id:12},
+  {name:"Los Angeles Lakers",    sport:"NBA",emoji:"🏀",color:"#552583",accent:"#FDB927",espn:"basketball/nba",id:13},
+  {name:"Memphis Grizzlies",     sport:"NBA",emoji:"🏀",color:"#5D76A9",accent:"#12173F",espn:"basketball/nba",id:29},
+  {name:"Miami Heat",            sport:"NBA",emoji:"🏀",color:"#98002E",accent:"#F9A01B",espn:"basketball/nba",id:14},
+  {name:"Milwaukee Bucks",       sport:"NBA",emoji:"🏀",color:"#00471B",accent:"#EEE1C6",espn:"basketball/nba",id:15},
+  {name:"Minnesota Timberwolves",sport:"NBA",emoji:"🏀",color:"#0C2340",accent:"#236192",espn:"basketball/nba",id:16},
+  {name:"New Orleans Pelicans",  sport:"NBA",emoji:"🏀",color:"#0C2340",accent:"#C8102E",espn:"basketball/nba",id:3},
+  {name:"New York Knicks",       sport:"NBA",emoji:"🏀",color:"#006BB6",accent:"#F58426",espn:"basketball/nba",id:18},
+  {name:"Oklahoma City Thunder", sport:"NBA",emoji:"🏀",color:"#007AC1",accent:"#EF3B24",espn:"basketball/nba",id:25},
+  {name:"Orlando Magic",         sport:"NBA",emoji:"🏀",color:"#0077C0",accent:"#C4CED4",espn:"basketball/nba",id:19},
+  {name:"Philadelphia 76ers",    sport:"NBA",emoji:"🏀",color:"#006BB6",accent:"#ED174C",espn:"basketball/nba",id:20},
+  {name:"Phoenix Suns",          sport:"NBA",emoji:"🏀",color:"#1D1160",accent:"#E56020",espn:"basketball/nba",id:21},
+  {name:"Portland Trail Blazers",sport:"NBA",emoji:"🏀",color:"#E03A3E",accent:"#000000",espn:"basketball/nba",id:22},
+  {name:"Sacramento Kings",      sport:"NBA",emoji:"🏀",color:"#5A2D81",accent:"#63727A",espn:"basketball/nba",id:23},
+  {name:"San Antonio Spurs",     sport:"NBA",emoji:"🏀",color:"#C4CED4",accent:"#000000",espn:"basketball/nba",id:24},
+  {name:"Toronto Raptors",       sport:"NBA",emoji:"🏀",color:"#CE1141",accent:"#000000",espn:"basketball/nba",id:28},
+  {name:"Utah Jazz",             sport:"NBA",emoji:"🏀",color:"#002B5C",accent:"#00471B",espn:"basketball/nba",id:26},
+  {name:"Washington Wizards",    sport:"NBA",emoji:"🏀",color:"#002B5C",accent:"#E31837",espn:"basketball/nba",id:27},
+  {name:"Vegas Golden Knights",  sport:"NHL",emoji:"🏒",color:"#B4975A",accent:"#C8A84B",espn:"hockey/nhl",id:29},
+  {name:"Carolina Hurricanes",   sport:"NHL",emoji:"🏒",color:"#CC0000",accent:"#A2AAAD",espn:"hockey/nhl",id:12},
+  {name:"Colorado Avalanche",    sport:"NHL",emoji:"🏒",color:"#6F263D",accent:"#236192",espn:"hockey/nhl",id:21},
+  {name:"Edmonton Oilers",       sport:"NHL",emoji:"🏒",color:"#FF4C00",accent:"#FFB81C",espn:"hockey/nhl",id:22},
+  {name:"Florida Panthers",      sport:"NHL",emoji:"🏒",color:"#041E42",accent:"#C8102E",espn:"hockey/nhl",id:13},
+  {name:"Arsenal",               sport:"Soccer",emoji:"⚽",color:"#EF0107",accent:"#9C824A",espn:"soccer/eng.1",id:359},
+  {name:"Manchester City",       sport:"Soccer",emoji:"⚽",color:"#6CABDD",accent:"#98C5E9",espn:"soccer/eng.1",id:382},
+  {name:"Real Madrid",           sport:"Soccer",emoji:"⚽",color:"#00529F",accent:"#FEBE10",espn:"soccer/esp.1",id:86},
+  {name:"Inter Miami",           sport:"MLS",   emoji:"⚽",color:"#F7B5CD",accent:"#F7B5CD",espn:"soccer/usa.1",id:20232},
+];
+
+const SPORTS_FILTER=["ALL","NFL","MLB","NBA","NHL","Soccer","MLS"];
+
+// ── STATIC TEAM DATA ──────────────────────────────────────────────────────────
+const STATIC={
+  "New York Giants":{hotTake:"The Giants signed Odell Beckham Jr. — the prodigal son returns to where it all started.",keyFact:"OBJ met with HC John Harbaugh at the owners meetings and a reunion deal followed — one of the best stories of the 2026 offseason."},
+  "Seattle Seahawks":{hotTake:"The Seahawks are the reigning Super Bowl LX champions. Your team wishes.",keyFact:"Seattle won Super Bowl LX and opens 2026 as defending champions hosting the Patriots on a Wednesday night."},
+  "Kansas City Chiefs":{hotTake:"One healthy offseason and Mahomes reminds the league why he's the GOAT.",keyFact:"Mahomes is rehabbing a knee injury from 2025. The revenge tour starts September 2026."},
+  "New York Knicks":{hotTake:"Brunson averaged 27.8 PPG in 13 playoff games. The Knicks are in the Finals for the first time since 1999.",keyFact:"Mitchell Robinson is playing the NBA Finals with a broken right pinky — wearing a brace and refusing to sit."},
+  "San Antonio Spurs":{hotTake:"Wembanyama averaged 28.4 PPG in the West Finals — one of the best playoff runs by a sophomore ever.",keyFact:"Victor Wembanyama is the most unique player in basketball history. San Antonio is building around him wisely."},
+  "Oklahoma City Thunder":{hotTake:"SGA is the best scorer alive and OKC started 24-1 — tying the 2015-16 Warriors.",keyFact:"OKC tied the all-time best 25-game start in NBA history this season. Shai is the MVP favorite."},
+  "New York Mets":{hotTake:"Juan Soto signed the largest contract in sports history. Owner Steve Cohen is all-in.",keyFact:"The 2024 Mets started 22-33 and made the playoffs. Same record, same month. History can repeat."},
+  "New York Yankees":{hotTake:"The Yankees lead MLB in home runs and Judge is the most feared hitter in baseball.",keyFact:"27 World Series titles — more than any franchise in professional sports history."},
+  "Los Angeles Dodgers":{hotTake:"Back-to-back World Series champs, best ERA in MLB, and Ohtani batting .310. It's not close.",keyFact:"Ohtani hit 54 HR + stole 59 bases in 2024 — the first 50/50 season in MLB history."},
+  "Boston Celtics":{hotTake:"Boston lost a shocking upset but Tatum is healthy and the Celtics will be back.",keyFact:"The Celtics won their 18th championship in 2024 — the most titles in NBA history."},
+  "Vegas Golden Knights":{hotTake:"Vegas fired their coach mid-season, swept the Presidents' Trophy winners, and are in the Cup Final.",keyFact:"Vegas reached the Cup Final in their very first season (2017-18) — the greatest expansion debut in pro sports history."},
+  "Carolina Hurricanes":{hotTake:"Carolina eliminated Montreal and faces Vegas in the Stanley Cup Final starting Tuesday.",keyFact:"The Hurricanes have made the playoffs 8 straight years under Rod Brind'Amour — one of the great coaching runs ever."},
+};
+function getStatic(name){
+  return STATIC[name]||{
+    hotTake:`${name} — tap Stats or Players for live data.`,
+    keyFact:"Full season stats and roster data powered by ESPN."
+  };
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function getPosition(pos, sport){
+  const nba={PG:"Point Guard",SG:"Shooting Guard",SF:"Small Forward",PF:"Power Forward",C:"Center",G:"Guard",F:"Forward",GF:"Guard-Forward",FC:"Forward-Center"};
+  const nfl={QB:"Quarterback",RB:"Running Back",WR:"Wide Receiver",TE:"Tight End",FB:"Fullback",OT:"Offensive Tackle",OG:"Offensive Guard",OL:"Offensive Lineman",C:"Center",DE:"Defensive End",DT:"Defensive Tackle",NT:"Nose Tackle",LB:"Linebacker",OLB:"Outside Linebacker",ILB:"Inside Linebacker",MLB:"Middle Linebacker",CB:"Cornerback",S:"Safety",SS:"Strong Safety",FS:"Free Safety",DB:"Defensive Back",K:"Kicker",P:"Punter",LS:"Long Snapper"};
+  const mlb={SP:"Starting Pitcher",RP:"Relief Pitcher",CL:"Closer",MR:"Middle Reliever",C:"Catcher",SS:"Shortstop","1B":"First Base","2B":"Second Base","3B":"Third Base",LF:"Left Field",CF:"Center Field",RF:"Right Field",OF:"Outfield",DH:"Designated Hitter",IF:"Infield"};
+  const nhl={C:"Center",LW:"Left Wing",RW:"Right Wing",D:"Defenseman",G:"Goalie"};
+  const map=sport==="basketball"?nba:sport==="football"?nfl:sport==="baseball"?mlb:sport==="hockey"?nhl:{};
+  return map[pos]||pos;
+}
+
+function timeSince(dateStr){
+  if(!dateStr)return"";
+  const diff=(Date.now()-new Date(dateStr))/1000;
+  if(diff<60)return"now";
+  if(diff<3600)return Math.floor(diff/60)+"m";
+  if(diff<86400)return Math.floor(diff/3600)+"h";
+  return Math.floor(diff/86400)+"d";
+}
+
+function parseRecord(t){const items=t?.record?.items||[];for(const i of items){if(i.summary)return i.summary;}return null;}
+
+function parseGame(sb,tid){
+  for(const ev of(sb?.events||[])){
+    const comp=ev.competitions?.[0];if(!comp)continue;
+    const involved=comp.competitors?.some(c=>String(c.team?.id)===String(tid));if(!involved)continue;
+    const[c1,c2]=comp.competitors;
+    const status=ev.status?.type?.description||"";
+    const n1=c1?.team?.shortDisplayName||"?",n2=c2?.team?.shortDisplayName||"?";
+    const isFinal=status.toLowerCase().includes("final"),isLive=status.toLowerCase().includes("progress");
+    if(isFinal)return`${n1} ${c1.score} – ${n2} ${c2.score} · Final`;
+    if(isLive)return`🔴 LIVE: ${n1} ${c1.score} – ${n2} ${c2.score}`;
+    const date=ev.date?new Date(ev.date).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+    return`Next: ${n1} vs ${n2}${date?" · "+date:""}`;
+  }return null;
+}
+
+function parseScoreboardEvents(data, sportKey){
+  return(data?.events||[]).map(ev=>{
+    const comp=ev.competitions?.[0]||{};
+    const competitors=comp.competitors||[];
+    const home=competitors.find(c=>c.homeAway==="home")||competitors[0]||{};
+    const away=competitors.find(c=>c.homeAway==="away")||competitors[1]||{};
+    const isLive=ev.status?.type?.state==="in";
+    const isFinal=ev.status?.type?.completed;
+    return{
+      id:ev.id, name:ev.name||"", date:ev.date, sportKey,
+      status:ev.status,isLive,isFinal,
+      homeTeam:{name:home.team?.shortDisplayName||"",abbr:home.team?.abbreviation||"",logo:home.team?.logo||"",score:home.score||"",winner:home.winner,color:"#"+(home.team?.color||"333")},
+      awayTeam:{name:away.team?.shortDisplayName||"",abbr:away.team?.abbreviation||"",logo:away.team?.logo||"",score:away.score||"",winner:away.winner,color:"#"+(away.team?.color||"333")},
+      broadcast:comp.broadcasts?.[0]?.names?.[0]||"",
+      notes:comp.notes?.[0]?.headline||"",
+    };
+  });
+}
+
+function statusLabel(ev){
+  const st=ev.status?.type;
+  if(st?.completed)return"Final";
+  if(st?.state==="in"){
+    const clk=ev.status?.displayClock||"";
+    const per=ev.status?.period||"";
+    const sport=ev.sportKey||"";
+    let periodStr=`${per}`;
+    if(sport==="nba")periodStr=per===5?"OT":per>5?`${per-4}OT`:`Q${per}`;
+    else if(sport==="nhl")periodStr=per===4?"OT":per>4?"SO":`P${per}`;
+    else if(sport==="mlb"){const half=ev.status?.type?.shortDetail?.includes("Bot")?"Bot":"Top";periodStr=`${half} ${per}`;}
+    return clk?`${clk} ${periodStr}`:st.shortDetail||"Live";
+  }
+  const d=ev.date?new Date(ev.date):null;
+  if(d)return d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  return st?.shortDetail||"";
+}
+
+// ── STAT INFO ─────────────────────────────────────────────────────────────────
+const STAT_INFO={
+  PPG:{full:"Points Per Game",desc:"Average points scored per game. The primary measure of offensive output.",link:"https://www.nba.com/stats/leaders",max:35,good:"high"},
+  RPG:{full:"Rebounds Per Game",desc:"Average boards grabbed per game. Measures dominance on the glass.",link:"https://www.nba.com/stats/leaders?StatCategory=REB",max:15,good:"high"},
+  APG:{full:"Assists Per Game",desc:"Average passes leading to a score per game. Measures court vision and playmaking.",link:"https://www.nba.com/stats/leaders?StatCategory=AST",max:12,good:"high"},
+  "FG%":{full:"Field Goal %",desc:"Percentage of shots made from the field. Elite shooters hit above 50%.",link:"https://www.nba.com/stats/leaders?StatCategory=FG_PCT",max:70,good:"high"},
+  AVG:{full:"Batting Average",desc:"Hits divided by at-bats. The classic measure of a hitter. .300+ is elite.",link:"https://www.mlb.com/stats/batting-average",max:0.4,good:"high"},
+  HR:{full:"Home Runs",desc:"Total home runs hit. The power stat — one swing, one run (or more).",link:"https://www.mlb.com/stats/home-runs",max:50,good:"high"},
+  RBI:{full:"Runs Batted In",desc:"Runs scored due to the batter's play. Measures run production and clutch hitting.",link:"https://www.mlb.com/stats/runs-batted-in",max:130,good:"high"},
+  OPS:{full:"On-Base + Slugging",desc:"OBP + SLG combined. The best single number for overall hitting value. .900+ is elite.",link:"https://www.mlb.com/stats/on-base-plus-slugging",max:1.1,good:"high"},
+  ERA:{full:"Earned Run Average",desc:"Average earned runs allowed per 9 innings. Under 3.00 is ace-level.",link:"https://www.mlb.com/stats/earned-run-average",max:6,good:"low"},
+  K:{full:"Strikeouts",desc:"Total batters struck out. The strikeout is the ultimate pitcher's weapon.",link:"https://www.mlb.com/stats/strikeouts",max:250,good:"high"},
+  W:{full:"Wins",desc:"Games where the pitcher was credited with a win.",link:"https://www.mlb.com/stats/wins",max:20,good:"high"},
+  WHIP:{full:"WHIP",desc:"Walks + Hits Per Inning Pitched. Under 1.10 is ace territory.",link:"https://www.mlb.com/stats/whip",max:2,good:"low"},
+  PYDS:{full:"Passing Yards",desc:"Total yards gained on completed passes. The signature QB volume stat.",link:"https://www.nfl.com/stats/player-stats/",max:5000,good:"high"},
+  PTD:{full:"Passing Touchdowns",desc:"Total TD passes thrown. Elite QBs throw 35+ per season.",link:"https://www.nfl.com/stats/player-stats/",max:50,good:"high"},
+  "CMP%":{full:"Completion %",desc:"Percentage of passes completed. Elite QBs complete 67%+.",link:"https://www.nfl.com/stats/player-stats/",max:75,good:"high"},
+  RTG:{full:"Passer Rating",desc:"NFL's official QB efficiency formula. 100+ is Pro Bowl level, 120+ is MVP.",link:"https://www.nfl.com/stats/player-stats/",max:130,good:"high"},
+  RYDS:{full:"Rushing Yards",desc:"Total yards gained running the ball. 1,000+ in a season is the RB milestone.",link:"https://www.nfl.com/stats/player-stats/",max:2000,good:"high"},
+  RTD:{full:"Rushing Touchdowns",desc:"TDs scored on the ground. Goal-line backs rack these up.",link:"https://www.nfl.com/stats/player-stats/",max:20,good:"high"},
+  YPC:{full:"Yards Per Carry",desc:"Average yards gained per rushing attempt. 4.5+ is considered excellent.",link:"https://www.nfl.com/stats/player-stats/",max:7,good:"high"},
+  REC:{full:"Receptions",desc:"Total passes caught. 100+ catches in a season is elite WR territory.",link:"https://www.nfl.com/stats/player-stats/",max:150,good:"high"},
+  REYDS:{full:"Receiving Yards",desc:"Total yards gained catching the ball. 1,000+ is the WR benchmark.",link:"https://www.nfl.com/stats/player-stats/",max:1800,good:"high"},
+  RETD:{full:"Receiving TDs",desc:"Touchdowns scored catching the ball. The money stat for pass-catchers.",link:"https://www.nfl.com/stats/player-stats/",max:15,good:"high"},
+  YPR:{full:"Yards Per Reception",desc:"Average yards gained per catch. High YPR means explosive plays downfield.",link:"https://www.nfl.com/stats/player-stats/",max:20,good:"high"},
+  SACKS:{full:"Sacks",desc:"Times the QB was tackled behind the line. The premier pass rusher stat.",link:"https://www.nfl.com/stats/player-stats/",max:20,good:"high"},
+  TKL:{full:"Total Tackles",desc:"Total tackles made. Measures defensive activity.",link:"https://www.nfl.com/stats/player-stats/",max:150,good:"high"},
+  TFL:{full:"Tackles For Loss",desc:"Tackles behind the line of scrimmage. Disrupts the offense.",link:"https://www.nfl.com/stats/player-stats/",max:20,good:"high"},
+  FF:{full:"Forced Fumbles",desc:"Times a defender forced the offense to lose the ball.",link:"https://www.nfl.com/stats/player-stats/",max:5,good:"high"},
+  INT:{full:"Interceptions",desc:"Passes caught by the defense. The ultimate turnover play.",link:"https://www.nfl.com/stats/player-stats/",max:8,good:"high"},
+  PD:{full:"Passes Defended",desc:"Passes broken up or intercepted. Measures a DB's coverage ability.",link:"https://www.nfl.com/stats/player-stats/",max:20,good:"high"},
+  G:{full:"Goals",desc:"Total goals scored. 40+ in a season puts you in the Rocket Richard Trophy conversation.",link:"https://www.nhl.com/stats/skaters",max:60,good:"high"},
+  A:{full:"Assists",desc:"Total assists on goals. Great passers often rack up more assists than goals.",link:"https://www.nhl.com/stats/skaters",max:80,good:"high"},
+  PTS:{full:"Points",desc:"Goals + Assists combined. The primary measure of a skater's offensive production.",link:"https://www.nhl.com/stats/skaters",max:130,good:"high"},
+  "SV%":{full:"Save Percentage",desc:"Percentage of shots saved. .920+ is considered elite goaltending.",link:"https://www.nhl.com/stats/goalies",max:1,good:"high"},
+  GAA:{full:"Goals Against Average",desc:"Average goals allowed per 60 minutes. Under 2.50 is excellent.",link:"https://www.nhl.com/stats/goalies",max:4,good:"low"},
+  "+/-":{full:"Plus/Minus",desc:"Goals scored vs. allowed while on ice. Positive means your team plays better with you.",link:"https://www.nhl.com/stats/skaters",max:60,good:"high"},
+};
+
+const TEAM_STAT_INFO={
+  avgPoints:{full:"Points Per Game",desc:"Average points scored per game. League average is ~114. Elite offenses crack 120+.",link:"https://www.nba.com/stats/teams/traditional",max:130,good:"high"},
+  avgRebounds:{full:"Rebounds Per Game",desc:"Average total rebounds. Winning the glass wins games.",link:"https://www.nba.com/stats/teams/traditional",max:55,good:"high"},
+  avgAssists:{full:"Assists Per Game",desc:"Average assists. High assists signal great ball movement.",link:"https://www.nba.com/stats/teams/traditional",max:35,good:"high"},
+  fieldGoalPct:{full:"Field Goal %",desc:"Percentage of shots made. Elite offenses shoot 48%+.",link:"https://www.nba.com/stats/teams/traditional",max:60,good:"high"},
+  assistTurnoverRatio:{full:"Assist/Turnover Ratio",desc:"Assists divided by turnovers. Above 2.0 means purposeful ball movement.",link:"https://www.nba.com/stats/teams/advanced",max:4,good:"high"},
+  avgFouls:{full:"Fouls Per Game",desc:"Team fouls per game. Too many fouls send opponents to the line.",link:"https://www.nba.com/stats/teams/traditional",max:30,good:"low"},
+  completionPct:{full:"Completion %",desc:"Percentage of passes completed. Elite offenses complete 67%+.",link:"https://www.nfl.com/stats/team-stats/",max:75,good:"high"},
+  passingYards:{full:"Passing Yards",desc:"Total passing yards. Elite air attacks throw for 4,500+ yards.",link:"https://www.nfl.com/stats/team-stats/",max:5000,good:"high"},
+  passingTouchdowns:{full:"Passing Touchdowns",desc:"Total TD passes. Elite offenses throw 35+ per season.",link:"https://www.nfl.com/stats/team-stats/",max:50,good:"high"},
+  interceptions:{full:"Interceptions Thrown",desc:"Total INTs thrown. Turnovers kill drives. Fewer is always better.",link:"https://www.nfl.com/stats/team-stats/",max:20,good:"low"},
+  rushingYards:{full:"Rushing Yards",desc:"Total yards on the ground. 1,800+ is an elite run game.",link:"https://www.nfl.com/stats/team-stats/",max:2500,good:"high"},
+  rushingTouchdowns:{full:"Rushing TDs",desc:"TDs scored on the ground. A strong red-zone run game converts short yardage.",link:"https://www.nfl.com/stats/team-stats/",max:30,good:"high"},
+  yardsPerRushAttempt:{full:"Yards Per Carry",desc:"Average yards per rush. 4.5+ is excellent. Under 3.5 is a struggle.",link:"https://www.nfl.com/stats/team-stats/",max:6,good:"high"},
+  sacks:{full:"Sacks Allowed",desc:"Times the QB was sacked. Fewer sacks = better O-line protection.",link:"https://www.nfl.com/stats/team-stats/",max:60,good:"low"},
+  teamGamesPlayed:{full:"Games Played",desc:"Total games played this season.",link:null,max:162,good:"high"},
+  runs:{full:"Runs Scored",desc:"Total runs scored. More runs = more wins. Elite offenses score 800+ per season.",link:"https://www.mlb.com/stats/runs",max:900,good:"high"},
+  hits:{full:"Hits",desc:"Total team hits. More hits means more baserunners.",link:"https://www.mlb.com/stats/",max:1600,good:"high"},
+  doubles:{full:"Doubles",desc:"Two-base hits. Extra-base hits drive runners in.",link:"https://www.mlb.com/stats/doubles",max:350,good:"high"},
+  triples:{full:"Triples",desc:"Three-base hits — the rarest hit in baseball. Requires speed and power.",link:"https://www.mlb.com/stats/triples",max:40,good:"high"},
+  homeRuns:{full:"Home Runs",desc:"Total team home runs. The most exciting play in baseball.",link:"https://www.mlb.com/stats/home-runs",max:250,good:"high"},
+  RBIs:{full:"Runs Batted In",desc:"Total RBIs. How many runs the lineup has driven in.",link:"https://www.mlb.com/stats/runs-batted-in",max:800,good:"high"},
+  battingAverage:{full:"Team Batting Average",desc:"Combined batting average. .260+ is strong. .240 is league average.",link:"https://www.mlb.com/stats/batting-average",max:0.31,good:"high"},
+  strikeouts:{full:"Strikeouts (Batting)",desc:"How many times the team struck out. Fewer Ks = better contact.",link:"https://www.mlb.com/stats/strikeouts",max:1700,good:"low"},
+  walks:{full:"Walks",desc:"Total walks drawn. Patient hitters wear out pitchers.",link:"https://www.mlb.com/stats/walks",max:700,good:"high"},
+  stolenBases:{full:"Stolen Bases",desc:"Total stolen bases. Speed and aggression on the basepaths.",link:"https://www.mlb.com/stats/stolen-bases",max:150,good:"high"},
+  ERA:{full:"Team ERA",desc:"Average earned runs allowed per 9 innings. Under 3.50 is strong.",link:"https://www.mlb.com/stats/earned-run-average",max:6,good:"low"},
+  WHIP:{full:"WHIP",desc:"Walks + Hits Per Inning Pitched. Under 1.20 is excellent.",link:"https://www.mlb.com/stats/whip",max:1.8,good:"low"},
+  goals:{full:"Goals Scored",desc:"Total goals scored. 250+ is a strong offensive team.",link:"https://www.nhl.com/stats/teams",max:320,good:"high"},
+  goalsAgainst:{full:"Goals Against",desc:"Total goals allowed. Elite defenses allow under 200 per season.",link:"https://www.nhl.com/stats/teams",max:320,good:"low"},
+  powerPlayPct:{full:"Power Play %",desc:"Percentage of power plays that result in a goal. 22%+ is elite.",link:"https://www.nhl.com/stats/teams",max:30,good:"high"},
+  penaltyKillPct:{full:"Penalty Kill %",desc:"Percentage of opponent power plays stopped. 82%+ is strong.",link:"https://www.nhl.com/stats/teams",max:100,good:"high"},
+};
+
+function getTeamStatInfo(stat){
+  return TEAM_STAT_INFO[stat.name]||TEAM_STAT_INFO[stat.abbreviation]||TEAM_STAT_INFO[stat.shortDisplayName]||{full:stat.displayName||stat.shortDisplayName||stat.name,desc:"Season team statistic.",link:null,max:null,good:"high"};
+}
+
+// ── DATA FETCHING ──────────────────────────────────────────────────────────────
+async function loadTeamData(team){
+  const[sp,lg]=team.espn.split("/");
+  const scorePath=`sports/${sp}/${lg}/scoreboard`;
+  const[tr,sr,nr,pr,tsr]=await Promise.all([
+    fetch(`${PROXY}/team/${sp}/${lg}/${team.id}`).then(r=>r.json()).catch(()=>null),
+    fetch(`${PROXY}/espn?path=${encodeURIComponent(scorePath)}`).then(r=>r.json()).catch(()=>null),
+    fetch(`${PROXY}/news/${sp}/${lg}/${team.id}`).then(r=>r.json()).catch(()=>null),
+    fetch(`${PROXY}/players/${sp}/${lg}/${team.id}`).then(r=>r.json()).catch(()=>null),
+    fetch(`${PROXY}/teamstats/${sp}/${lg}/${team.id}`).then(r=>r.json()).catch(()=>null),
+  ]);
+  const td=tr?.team||tr||{};
+  const statArr=td.record?.items?.[0]?.stats||[];
+  const coach=td._headCoach||null;
+  const articles=(nr?.articles||[]).slice(0,6).map(a=>({
+    headline:a.headline||a.title||"",
+    link:a.links?.web?.href||a.link||a.url||null,
+    desc:a.description||a.summary||"",
+    published:a.published?new Date(a.published).toLocaleDateString("en-US",{month:"short",day:"numeric"}):null,
+  })).filter(a=>a.headline);
+  return{
+    record:parseRecord(td),standing:td.standingSummary||null,coach,
+    venue:td.venue?.fullName||null,logo:td.logos?.[0]?.href||null,
+    game:sr?parseGame(sr,team.id):null,
+    pct:statArr.find(s=>s.name==="winPercent")?.displayValue||null,
+    articles,players:pr?.players||[],
+    teamStats:tsr?.categories||[],teamLeaders:tsr?.leaders||[],teamStatsYear:tsr?.season||null,
+  };
+}
+
+// ── PLAYER CARD ───────────────────────────────────────────────────────────────
+function PlayerCard({p,ac,sport}){
+  return(
+    <div style={{background:"#141414",border:"1px solid #2a2a2a",borderRadius:"10px",padding:"13px 14px",marginBottom:"8px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"11px"}}>
+        <div>
+          <div style={{fontSize:"15px",fontWeight:"bold",color:"#f0ece4"}}>{p.name}</div>
+          <div style={{fontSize:"10px",fontFamily:"monospace",color:"#777",marginTop:"2px"}}>{getPosition(p.pos,sport)}</div>
+        </div>
+        <div style={{fontSize:"10px",fontFamily:"monospace",color:ac,background:ac+"22",padding:"3px 8px",borderRadius:"4px"}}>{p.jersey?`#${p.jersey} · `:""}{p.pos}</div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:"7px"}}>
+        {p.stats.map((s,j)=>{
+          const info=STAT_INFO[s.l]||{full:s.l,desc:"Season statistic.",link:null,max:100,good:"high"};
+          const numVal=parseFloat(String(s.v).replace(/[^0-9.]/g,""))||0;
+          const pct=info.max?Math.min(100,Math.max(2,(numVal/info.max)*100)):50;
+          const barColor=info.good==="low"?"#60a5fa":ac;
+          return(
+            <div key={j} style={{background:"#0d0d0d",borderRadius:"7px",padding:"9px 11px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"6px"}}>
+                <div style={{flex:1,minWidth:0,marginRight:"10px"}}>
+                  <div style={{fontSize:"11px",fontWeight:"bold",color:"#ccc"}}>{info.full}</div>
+                  <div style={{fontSize:"10px",color:"#999",lineHeight:1.4,marginTop:"2px"}}>{info.desc}</div>
+                </div>
+                <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
+                  <div style={{fontSize:"18px",fontWeight:"900",color:"#f0ece4",lineHeight:1}}>{s.v}</div>
+                  {info.link&&<a href={info.link} target="_blank" rel="noopener noreferrer" style={{fontSize:"9px",color:"#aaa",textDecoration:"none",marginTop:"2px",fontFamily:"monospace"}}>learn more ↗</a>}
+                </div>
+              </div>
+              <div style={{background:"#2a2a2a",borderRadius:"3px",height:"5px",overflow:"hidden"}}>
+                <div style={{width:pct+"%",height:"100%",background:barColor,borderRadius:"3px",transition:"width .6s ease"}}/>
+              </div>
+              <div style={{fontSize:"9px",color:"#777",fontFamily:"monospace",marginTop:"4px"}}>{info.good==="low"?"↓ lower is better":"↑ higher is better"}{info.max?` · scale 0–${info.max}`:""}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── LIVE SCORES PANEL ─────────────────────────────────────────────────────────
+function LiveScores(){
+  const[activeSport,setActiveSport]=useState(LIVE_SPORTS[0]);
+  const[events,setEvents]=useState([]);
+  const[news,setNews]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[liveTab,setLiveTab]=useState("games");
+  const timerRef=useRef(null);
+
+  async function load(sp){
+    setLoading(true);
+    try{
+      const[sbRes,newsRes]=await Promise.all([
+        fetch(`${PROXY}/espn?path=${encodeURIComponent(`sports/${sp.espn}/scoreboard`)}`).then(r=>r.json()).catch(()=>null),
+        fetch(`${PROXY}/espn?path=${encodeURIComponent(`sports/${sp.espn.split("/")[0]}/${sp.espn.split("/")[1]}/news?limit=8`)}`).then(r=>r.json()).catch(()=>null),
+      ]);
+      setEvents(sbRes?parseScoreboardEvents(sbRes,sp.key):[]);
+      setNews((newsRes?.articles||[]).slice(0,8).map(a=>({
+        headline:a.headline||a.title||"",
+        link:a.links?.web?.href||a.link||a.url||null,
+        desc:a.description||a.summary||"",
+        when:a.published?timeSince(a.published)+" ago":null,
+      })).filter(a=>a.headline));
+    }finally{setLoading(false);}
+  }
+
+  useEffect(()=>{load(activeSport);},[activeSport]);
+  useEffect(()=>{
+    timerRef.current=setInterval(()=>load(activeSport),60000);
+    return()=>clearInterval(timerRef.current);
+  },[activeSport]);
+
+  const liveEvs=events.filter(e=>e.isLive);
+  const upcoming=events.filter(e=>!e.isLive&&!e.isFinal);
+  const finals=events.filter(e=>e.isFinal);
+
+  function GameCard({ev}){
+    return(
+      <div style={{background:"#141414",border:"1px solid #1f1f1f",borderRadius:"10px",padding:"13px 15px",marginBottom:"8px",borderLeft:ev.isLive?"3px solid #22c55e":"3px solid transparent"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"9px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+            {ev.isLive&&<span style={{width:"7px",height:"7px",borderRadius:"50%",background:"#22c55e",animation:"pulse 1.4s ease infinite",display:"inline-block"}}/>}
+            <span style={{fontSize:"11px",fontFamily:"monospace",color:ev.isLive?"#22c55e":ev.isFinal?"#555":"#888"}}>{statusLabel(ev)}</span>
+          </div>
+          {ev.broadcast&&<span style={{fontSize:"10px",color:"#444",fontFamily:"monospace"}}>{ev.broadcast}</span>}
+        </div>
+        {[ev.awayTeam,ev.homeTeam].map((team,i)=>(
+          <div key={i} style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:i===0?"7px":"0"}}>
+            {team.logo?<img src={team.logo} alt="" style={{width:"26px",height:"26px",objectFit:"contain"}}/>:<div style={{width:"26px",height:"26px",borderRadius:"50%",background:team.color+"33"}}/>}
+            <span style={{flex:1,fontSize:"14px",fontWeight:team.winner?"700":"500",color:team.winner?"#fff":ev.isFinal?"#888":"#ddd"}}>{team.name}</span>
+            <span style={{fontSize:"19px",fontWeight:"700",fontFamily:"monospace",color:team.winner?"#fff":ev.isFinal?"#555":"#ddd",minWidth:"24px",textAlign:"right"}}>{team.score}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return(
+    <div style={{animation:"fadeIn .3s ease"}}>
+      {/* Sport tabs */}
+      <div style={{display:"flex",gap:"6px",overflowX:"auto",paddingBottom:"12px",scrollbarWidth:"none",marginBottom:"4px"}}>
+        {LIVE_SPORTS.map(sp=>{
+          const on=activeSport.key===sp.key;
+          return<button key={sp.key} className="sp" onClick={()=>{setActiveSport(sp);setLiveTab("games");}} style={{padding:"6px 14px",borderRadius:"20px",border:"1px solid "+(on?sp.color:"#2a2a2a"),background:on?sp.color+"22":"#141414",color:on?sp.color:"#888",fontSize:"12px",fontWeight:on?"700":"400",fontFamily:"monospace",flexShrink:0}}>{sp.label}</button>;
+        })}
+      </div>
+
+      {/* Games / News tabs */}
+      <div style={{display:"flex",gap:"3px",background:"#0d0d0d",padding:"3px",borderRadius:"7px",border:"1px solid #1a1a1a",marginBottom:"14px"}}>
+        {[["games","🏟 Games"],["news","📰 News"]].map(([k,l])=>{
+          const on=liveTab===k;
+          return<button key={k} className="tb" onClick={()=>setLiveTab(k)} style={{flex:1,padding:"8px 4px",border:"none",borderRadius:"5px",background:on?"#1c1c1c":"transparent",color:on?"#f0ece4":"#666",fontFamily:"'DM Sans',Georgia,sans-serif",fontSize:"13px",fontWeight:on?"700":"400",borderBottom:on?"2px solid #c8102e":"2px solid transparent",cursor:"pointer"}}>{l}</button>;
+        })}
+      </div>
+
+      {loading&&(
+        <div style={{textAlign:"center",padding:"40px",color:"#555"}}>
+          <div style={{width:"24px",height:"24px",border:"3px solid #333",borderTop:"3px solid #c8102e",borderRadius:"50%",animation:"spin .8s linear infinite",margin:"0 auto 12px"}}/>
+          <div style={{fontSize:"11px",fontFamily:"monospace"}}>LOADING...</div>
+        </div>
+      )}
+
+      {!loading&&liveTab==="games"&&(
+        <div>
+          {liveEvs.length>0&&<div><div style={{fontSize:"10px",fontWeight:"700",color:"#22c55e",fontFamily:"monospace",letterSpacing:"0.1em",marginBottom:"8px"}}>🔴 LIVE NOW ({liveEvs.length})</div>{liveEvs.map(ev=><GameCard key={ev.id} ev={ev}/>)}<div style={{marginBottom:"16px"}}/></div>}
+          {upcoming.length>0&&<div><div style={{fontSize:"10px",fontWeight:"700",color:"#888",fontFamily:"monospace",letterSpacing:"0.1em",marginBottom:"8px"}}>UPCOMING ({upcoming.length})</div>{upcoming.map(ev=><GameCard key={ev.id} ev={ev}/>)}<div style={{marginBottom:"16px"}}/></div>}
+          {finals.length>0&&<div><div style={{fontSize:"10px",fontWeight:"700",color:"#555",fontFamily:"monospace",letterSpacing:"0.1em",marginBottom:"8px"}}>FINAL ({finals.length})</div>{finals.map(ev=><GameCard key={ev.id} ev={ev}/>)}</div>}
+          {events.length===0&&!loading&&<div style={{textAlign:"center",padding:"50px 20px",color:"#333",fontFamily:"monospace",fontSize:"12px"}}>No games today for {activeSport.label}</div>}
+        </div>
+      )}
+
+      {!loading&&liveTab==="news"&&(
+        <div>
+          {news.map((a,i)=>(
+            <a key={i} href={a.link||"#"} target="_blank" rel="noopener noreferrer">
+              <div style={{background:"#141414",border:"1px solid #2a2a2a",borderRadius:"10px",padding:"13px 15px",marginBottom:"8px",borderLeft:"3px solid #c8102e"}}>
+                <div style={{fontSize:"13px",fontWeight:"600",color:"#f0ece4",lineHeight:1.4,marginBottom:"4px"}}>{a.headline}{a.link?" ↗":""}</div>
+                {a.desc&&<div style={{fontSize:"11px",color:"#888",lineHeight:1.45}}>{a.desc.slice(0,120)}{a.desc.length>120?"…":""}</div>}
+                {a.when&&<div style={{fontSize:"10px",color:"#444",fontFamily:"monospace",marginTop:"5px"}}>{a.when}</div>}
+              </div>
+            </a>
+          ))}
+          {news.length===0&&<div style={{textAlign:"center",padding:"40px",color:"#333",fontFamily:"monospace",fontSize:"12px"}}>No news available</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+function App(){
+  const[appTab,setAppTab]=useState("scores"); // scores | teams | quiz
+  const[sel,setSel]=useState(null);
+  const[filter,setFilter]=useState("ALL");
+  const[search,setSearch]=useState("");
+  const[teamTab,setTeamTab]=useState("teams");
+  const[viewTab,setVTab]=useState("hottakes");
+  const[playerSort,setPlayerSort]=useState("default");
+  const[playerPosFilter,setPlayerPosFilter]=useState("ALL");
+  const[openTip,setOT]=useState(null);
+  const[qStep,setQS]=useState(0);
+  const[qScore,setQSc]=useState(0);
+  const[qDone,setQD]=useState(false);
+  const[ticker,setTK]=useState(0);
+  const[cache,setCache]=useState({});
+  const[loading,setLoad]=useState(false);
+  const[err,setErr]=useState(null);
+  const[favs,setFavs]=useState(()=>{try{return JSON.parse(localStorage.getItem(FAV_KEY)||"[]");}catch{return[];}});
+  const[favView,setFavView]=useState(false);
+
+  const ticks=["🔥 LIVE: Knicks in NBA Finals — first time since 1999","🏒 TUESDAY: Canes vs Vegas — Stanley Cup Final Game 1","⚡ TOMORROW: Thunder vs Spurs — Game 7 West Finals","⚾ BRAVES lead NL East at 37-18","🏈 SEAHAWKS defending Super Bowl LX champions"];
+  useEffect(()=>{const t=setInterval(()=>setTK(p=>(p+1)%ticks.length),3500);return()=>clearInterval(t);},[]);
+  useEffect(()=>{try{localStorage.setItem(FAV_KEY,JSON.stringify(favs));}catch{};},[favs]);
+
+  const toggleFav=useCallback((name,e)=>{e&&e.stopPropagation();setFavs(f=>f.includes(name)?f.filter(n=>n!==name):[...f,name]);},[]);
+
+  async function pick(team){
+    setSel(team);setTeamTab("teams");setVTab("hottakes");setPlayerSort("default");setPlayerPosFilter("ALL");
+    if(cache[team.name])return;
+    setLoad(true);setErr(null);
+    try{const d=await loadTeamData(team);setCache(p=>({...p,[team.name]:d}));}
+    catch(e){setErr(e.message);}
+    setLoad(false);
+  }
+
+  const q=search.toLowerCase();
+  const poolAll=favView?ALL_TEAMS.filter(t=>favs.includes(t.name)):ALL_TEAMS;
+  const filtered=poolAll.filter(t=>(filter==="ALL"||t.sport===filter)&&(!q||t.name.toLowerCase().includes(q)));
+  const live=sel?cache[sel.name]:null;
+  const ctx=sel?getStatic(sel.name):null;
+  const ac=sel?.accent||"#c8102e";
+  const tc=sel?.color||"#c8102e";
+  const sp=sel?.espn?.split("/")?.[0]||"";
+
+  const tips=[
+    {category:"The Lingo",icon:"🗣️",tips:['Always say "WE" never "they."','Drop "analytics" into any conversation.','First name only — not "Mahomes," just "Patrick."','Say "I called it" whenever anything happens.','Use "historically speaking" before making something up.']},
+    {category:"The Wardrobe",icon:"👕",tips:["Buy the current superstar's number. No throwbacks.","Keep tags on — return if they start losing.","Never wear a jersey in an away city.",'"I\'ve had this shirt for years" works for yesterday.']},
+    {category:"Game Day",icon:"📺",tips:["Check the score at halftime. React accordingly.","Text only when winning. Radio silence when losing.","Boo the refs. Always. Non-specific ref hatred = authentic.","Never admit you don't know a penalty call. Just nod gravely."]},
+    {category:"Social Media",icon:"📱",tips:["Post only W tweets. Delete L tweets before morning.","Add team emoji to your display name mid-playoffs.",'"Been saying this all season" on any good thing.',"Unfollow in the offseason. Refollow in October."]},
+    {category:"Exit Strategy",icon:"🚪",tips:['Start saying "the team" around Week 10 of a bad season.',"Pivot to \"I'm a fan of GOOD BASKETBALL\" — classy.","Blame the coach. Always safe.","Quietly begin wearing neutral-colored clothing."]},
+  ];
+
+  const quiz=[
+    {q:"Your team just made the playoffs. You:",options:["Post a throwback from the dark years","Buy a jersey and stream the opener","Tweet 'Been waiting for this moment'","All of the above, in order"],bandwagon:[false,true,true,true]},
+    {q:"Someone asks how long you've been a fan:",options:['"My whole life"','"Since the dynasty"','"I appreciate good ball"','"Since [star] came up"'],bandwagon:[false,false,true,true]},
+    {q:"4th quarter, down by 14. You:",options:["Stay and watch","Say 'Hard to watch' and open Twitter","Start looking up next week's schedule","Leave to beat traffic"],bandwagon:[false,false,true,true]},
+    {q:"A true fan challenges your knowledge. You:",options:["Engage respectfully","Say 'I don't owe you a quiz'","Deflect: 'Stats don't measure heart'","Block and mute"],bandwagon:[false,true,true,true]},
+  ];
+
+  function doQ(bw){if(bw)setQSc(s=>s+1);if(qStep+1>=quiz.length)setQD(true);else setQS(s=>s+1);}
+  function bwLvl(){
+    if(qScore<=1)return{label:"Suspicious Loyalist",desc:"You might actually be a real fan.",color:"#22c55e"};
+    if(qScore===2)return{label:"Emerging Opportunist",desc:"You've got the instincts.",color:"#f59e0b"};
+    if(qScore===3)return{label:"Peak Bandwagoner",desc:"You are the reason sports Twitter exists.",color:"#ef4444"};
+    return{label:"Transcendent Bandwagoner",desc:"A masterclass. You are the algorithm.",color:"#a855f7"};
+  }
+
+  const C=({children,s})=><div style={{background:"#141414",border:"1px solid #2a2a2a",borderRadius:"10px",padding:"13px 14px",...s}}>{children}</div>;
+  const Lbl=({children})=><div style={{fontSize:"9px",fontFamily:"monospace",color:"#777",letterSpacing:"0.12em",marginBottom:"5px"}}>{children}</div>;
+
+  return(
+    <div style={{minHeight:"100vh",background:"#080808",fontFamily:"'DM Sans',Georgia,sans-serif",color:"#f0ece4",paddingBottom:"80px"}}>
+      {/* Score ticker */}
+      <div style={{background:"#c8102e",padding:"7px 0",overflow:"hidden",borderBottom:"1px solid #900"}}>
+        <div style={{display:"flex",gap:"80px",animation:"scroll 22s linear infinite",whiteSpace:"nowrap"}}>
+          {[0,1,2,3,4].map(i=><span key={i} style={{fontSize:"12px",letterSpacing:"0.06em",fontFamily:"monospace",fontWeight:"bold"}}>{ticks[ticker]+"   ·   "}</span>)}
+        </div>
+      </div>
+
+      <div style={{maxWidth:"900px",margin:"0 auto",padding:"24px 16px 0"}}>
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:"24px"}}>
+          <div style={{fontSize:"11px",letterSpacing:"0.35em",color:"#c8102e",marginBottom:"8px",fontFamily:"monospace"}}>◆ THE COMPLETE SPORTS HUB ◆</div>
+          <h1 style={{fontSize:"clamp(36px,8vw,60px)",fontWeight:"900",lineHeight:1,margin:"0 0 8px",letterSpacing:"-0.025em",background:"linear-gradient(135deg,#f0ece4 30%,#c8102e)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",fontFamily:"'Bebas Neue','DM Sans',Georgia,sans-serif"}}>FANBASE</h1>
+          <p style={{color:"#666",fontSize:"13px",margin:0}}>Live scores · Team deep dives · {ALL_TEAMS.length} teams · Powered by ESPN</p>
+        </div>
+
+        {/* Main nav */}
+        <div style={{display:"flex",gap:"3px",marginBottom:"22px",background:"#0d0d0d",padding:"4px",borderRadius:"8px",border:"1px solid #1a1a1a"}}>
+          {[["scores","📡 Live Scores"],["teams","🏟 My Teams"],["quiz","🎯 Quiz"]].map(([k,l])=>{
+            const on=appTab===k;
+            return<button key={k} className="tb" onClick={()=>setAppTab(k)} style={{flex:1,padding:"10px 4px",border:"none",borderRadius:"6px",background:on?"#1c1c1c":"transparent",color:on?"#f0ece4":"#777",fontFamily:"'DM Sans',Georgia,sans-serif",fontSize:"13px",fontWeight:on?"bold":"normal",borderBottom:on?"2px solid #c8102e":"2px solid transparent",cursor:"pointer"}}>{l}</button>;
+          })}
+        </div>
+
+        {/* ── LIVE SCORES TAB ── */}
+        {appTab==="scores"&&<LiveScores/>}
+
+        {/* ── MY TEAMS TAB ── */}
+        {appTab==="teams"&&(
+          <div>
+            {/* Team nav sub-tabs */}
+            <div style={{display:"flex",gap:"3px",marginBottom:"18px",background:"#0d0d0d",padding:"3px",borderRadius:"7px",border:"1px solid #1a1a1a"}}>
+              {[["teams","🏟 Browse"],["favourites","⭐ Favourites"],["tips","📋 Fan Tips"]].map(([k,l])=>{
+                const on=teamTab===k;
+                return<button key={k} className="tb" onClick={()=>setTeamTab(k)} style={{flex:1,padding:"9px 4px",border:"none",borderRadius:"5px",background:on?"#1c1c1c":"transparent",color:on?"#f0ece4":"#666",fontFamily:"'DM Sans',Georgia,sans-serif",fontSize:"12px",fontWeight:on?"bold":"normal",borderBottom:on?"2px solid #c8102e":"2px solid transparent",cursor:"pointer"}}>{l}</button>;
+              })}
+            </div>
+
+            {/* Team detail view */}
+            {sel&&teamTab!=="tips"?(
+              <div style={{animation:"flipIn .35s ease"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
+                  <button onClick={()=>{setSel(null);setErr(null);}} className="sp" style={{display:"flex",alignItems:"center",gap:"8px",background:"#1a1a1a",border:"1px solid #333",color:"#ccc",padding:"8px 14px",borderRadius:"8px",fontSize:"13px",fontFamily:"'DM Sans',Georgia,sans-serif",cursor:"pointer"}}>← Back</button>
+                  <button onClick={e=>toggleFav(sel.name,e)} style={{background:"none",border:"none",fontSize:"22px",cursor:"pointer",padding:"4px 8px"}} title={favs.includes(sel.name)?"Remove favourite":"Add to favourites"}>{favs.includes(sel.name)?"⭐":"☆"}</button>
+                </div>
+
+                {/* Hero */}
+                <div style={{background:"linear-gradient(135deg,"+tc+"22,#080808)",border:"1px solid "+tc+"44",borderTop:"4px solid "+tc,borderRadius:"14px",padding:"20px 22px",marginBottom:"12px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
+                    {live?.logo&&<img src={live.logo} alt="" style={{width:"52px",height:"52px",objectFit:"contain",filter:"drop-shadow(0 0 8px rgba(255,255,255,0.12))"}}/>}
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:"10px",fontFamily:"monospace",color:ac,letterSpacing:"0.2em",marginBottom:"3px"}}>{sel.sport} · LIVE ESPN</div>
+                      <div style={{fontSize:"22px",fontWeight:"900",lineHeight:1.1,color:"#f0ece4"}}>{sel.name}</div>
+                      {live?.standing&&<div style={{marginTop:"4px",fontSize:"12px",color:"#bbb"}}>{live.standing}</div>}
+                    </div>
+                  </div>
+                </div>
+
+                {loading&&<div style={{textAlign:"center",padding:"40px 0"}}><div style={{width:"26px",height:"26px",border:"3px solid "+tc+"33",borderTop:"3px solid "+tc,borderRadius:"50%",animation:"spin .8s linear infinite",margin:"0 auto 12px"}}/><div style={{fontFamily:"monospace",fontSize:"11px",color:"#777"}}>FETCHING LIVE DATA...</div><div style={{fontFamily:"monospace",fontSize:"10px",color:"#444",marginTop:"4px"}}>first load ~30s to wake proxy</div></div>}
+                {err&&!loading&&<div style={{background:"#180808",border:"1px solid #c8102e44",borderRadius:"8px",padding:"12px",fontSize:"12px",color:"#ff8888",fontFamily:"monospace",marginBottom:"10px"}}>⚠ {err} <button className="sp" onClick={()=>{setErr(null);setCache(p=>{const n={...p};delete n[sel.name];return n;});pick(sel);}} style={{background:"#c8102e",border:"none",color:"white",padding:"4px 10px",borderRadius:"4px",cursor:"pointer",fontSize:"11px",marginLeft:"8px"}}>Retry</button></div>}
+
+                {live&&!loading&&(
+                  <div style={{animation:"fadeIn .4s ease"}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px",marginBottom:"8px"}}>
+                      <C><Lbl>RECORD</Lbl><div style={{fontSize:"16px",fontWeight:"900",color:"#f0ece4"}}>{live.record||"—"}</div>{live.pct&&<div style={{fontSize:"10px",color:"#888",marginTop:"2px"}}>{(parseFloat(live.pct)*100).toFixed(1)}% win rate</div>}</C>
+                      <C><Lbl>HEAD COACH</Lbl><div style={{fontSize:"12px",fontWeight:"bold",color:"#f0ece4",lineHeight:1.3}}>{live.coach||"—"}</div></C>
+                      <C><Lbl>HOME VENUE</Lbl><div style={{fontSize:"11px",fontWeight:"bold",color:"#f0ece4",lineHeight:1.3}}>{live.venue||"—"}</div></C>
+                    </div>
+                    {live.game&&<C s={{marginBottom:"8px"}}><Lbl>📡 LATEST GAME</Lbl><div style={{fontSize:"13px",color:"#ddd"}}>{live.game}</div></C>}
+
+                    {/* Detail sub-tabs */}
+                    <div style={{display:"flex",gap:"3px",margin:"12px 0 10px",background:"#0d0d0d",padding:"3px",borderRadius:"7px",border:"1px solid #1a1a1a"}}>
+                      {[["hottakes","🔥 Hot Takes"],["stats","📊 Stats"],["news","📰 News"],["players","👤 Players"]].map(([k,l])=>{
+                        const on=viewTab===k;
+                        return<button key={k} className="tb" onClick={()=>setVTab(k)} style={{flex:1,padding:"7px 2px",border:"none",borderRadius:"5px",background:on?"#1c1c1c":"transparent",color:on?"#f0ece4":"#555",fontFamily:"'DM Sans',Georgia,sans-serif",fontSize:"11px",fontWeight:on?"bold":"normal",borderBottom:on?"2px solid "+ac:"2px solid transparent",cursor:"pointer"}}>{l}</button>;
+                      })}
+                    </div>
+
+                    {/* Hot Takes */}
+                    {viewTab==="hottakes"&&(
+                      <div style={{animation:"fadeIn .3s ease"}}>
+                        <div style={{background:tc+"15",border:"1px solid "+tc+"35",borderRadius:"10px",padding:"16px 18px",marginBottom:"9px"}}>
+                          <Lbl>🔥 YOUR READY-MADE HOT TAKE</Lbl>
+                          <div style={{fontSize:"15px",fontStyle:"italic",color:"#f0ece4",lineHeight:1.65}}>"{ctx.hotTake}"</div>
+                        </div>
+                        <C><Lbl>💡 DROP THIS TO SOUND LEGIT</Lbl><div style={{fontSize:"13px",color:"#ccc",lineHeight:1.6}}>{ctx.keyFact}</div></C>
+                      </div>
+                    )}
+
+                    {/* Stats */}
+                    {viewTab==="stats"&&(
+                      <div style={{animation:"fadeIn .3s ease"}}>
+                        {live.teamLeaders&&live.teamLeaders.length>0?(
+                          <div style={{display:"flex",flexDirection:"column",gap:"7px"}}>
+                            <Lbl>TEAM SEASON LEADERS · {live.teamStatsYear||""}</Lbl>
+                            {live.teamLeaders.map((item,i)=>{
+                              const info=STAT_INFO[item.category]||{full:item.category,desc:"",link:null,max:100,good:"high"};
+                              const pct=Math.min(100,Math.max(2,(parseFloat(String(item.value).replace(/[^0-9.]/g,""))||0)/info.max*100));
+                              return<div key={i} style={{background:"#141414",border:"1px solid #2a2a2a",borderRadius:"8px",padding:"12px 14px"}}>
+                                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"6px"}}>
+                                  <div style={{flex:1,marginRight:"10px"}}><div style={{fontSize:"9px",fontFamily:"monospace",color:"#777",marginBottom:"2px"}}>{info.full||item.category}</div><div style={{fontSize:"14px",fontWeight:"bold",color:"#f0ece4"}}>{item.athlete}</div><div style={{fontSize:"10px",color:"#777",fontFamily:"monospace"}}>{item.pos}</div></div>
+                                  <div style={{textAlign:"right"}}><div style={{fontSize:"22px",fontWeight:"900",color:ac}}>{item.value}</div>{info.link&&<a href={info.link} target="_blank" rel="noopener noreferrer" style={{fontSize:"9px",color:"#aaa",textDecoration:"none",fontFamily:"monospace"}}>learn more ↗</a>}</div>
+                                </div>
+                                {info.desc&&<div style={{fontSize:"10px",color:"#999",marginBottom:"5px"}}>{info.desc}</div>}
+                                <div style={{background:"#2a2a2a",borderRadius:"3px",height:"4px"}}><div style={{width:pct+"%",height:"100%",background:ac,borderRadius:"3px"}}/></div>
+                              </div>;
+                            })}
+                          </div>
+                        ):live.teamStats&&live.teamStats.length>0?(
+                          <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+                            <Lbl>{(live.teamStatsYear||"")+" TEAM STATS · ESPN"}</Lbl>
+                            {live.teamStats.map((cat,i)=>{
+                              const valid=(cat.stats||[]).filter(s=>s.displayValue&&!["0","--","0.0","0.00",""].includes(s.displayValue));
+                              if(!valid.length)return null;
+                              return<div key={i}>
+                                <div style={{fontSize:"10px",fontWeight:"bold",color:"#888",letterSpacing:"0.1em",marginBottom:"7px",paddingBottom:"5px",borderBottom:"1px solid #1a1a1a"}}>{(cat.displayName||cat.name||"").toUpperCase()}</div>
+                                <div style={{display:"flex",flexDirection:"column",gap:"7px"}}>
+                                  {valid.slice(0,10).map((s,j)=>{
+                                    const info=getTeamStatInfo(s);
+                                    const numVal=parseFloat(String(s.displayValue).replace(/[^0-9.]/g,""))||0;
+                                    const pct=info.max?Math.min(100,Math.max(2,info.good==="low"?(1-(numVal/info.max))*100:(numVal/info.max)*100)):50;
+                                    const barColor=info.good==="low"?"#60a5fa":ac;
+                                    return<div key={j} style={{background:"#0d0d0d",borderRadius:"7px",padding:"9px 11px"}}>
+                                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"5px"}}>
+                                        <div style={{flex:1,marginRight:"10px"}}><div style={{fontSize:"11px",fontWeight:"bold",color:"#ccc"}}>{info.full}</div><div style={{fontSize:"10px",color:"#999",lineHeight:1.4,marginTop:"1px"}}>{info.desc}</div></div>
+                                        <div style={{flexShrink:0,textAlign:"right"}}><div style={{fontSize:"17px",fontWeight:"900",color:"#f0ece4"}}>{s.displayValue}</div>{info.link&&<a href={info.link} target="_blank" rel="noopener noreferrer" style={{fontSize:"9px",color:"#aaa",fontFamily:"monospace"}}>learn more ↗</a>}</div>
+                                      </div>
+                                      <div style={{background:"#2a2a2a",borderRadius:"3px",height:"4px"}}><div style={{width:pct+"%",height:"100%",background:barColor,borderRadius:"3px"}}/></div>
+                                      {info.max&&<div style={{fontSize:"9px",color:"#777",fontFamily:"monospace",marginTop:"3px"}}>{info.good==="high"?"↑ higher is better":"↓ lower is better"} · scale 0–{info.max}</div>}
+                                    </div>;
+                                  })}
+                                </div>
+                              </div>;
+                            })}
+                          </div>
+                        ):<div style={{textAlign:"center",padding:"30px",color:"#555",fontFamily:"monospace",fontSize:"12px"}}>Team stats not available.</div>}
+                      </div>
+                    )}
+
+                    {/* News */}
+                    {viewTab==="news"&&(
+                      <div style={{animation:"fadeIn .3s ease",display:"flex",flexDirection:"column",gap:"8px"}}>
+                        {live.articles&&live.articles.length>0?live.articles.map((a,i)=>(
+                          <div key={i} style={{background:"#141414",border:"1px solid #2a2a2a",borderLeft:"3px solid "+tc,borderRadius:"8px",padding:"12px 14px"}}>
+                            {a.link?<a href={a.link} target="_blank" rel="noopener noreferrer" style={{textDecoration:"none"}}><div style={{fontSize:"13px",fontWeight:"bold",color:"#f0ece4",lineHeight:1.45,marginBottom:"4px"}}>{a.headline} ↗</div></a>:<div style={{fontSize:"13px",fontWeight:"bold",color:"#f0ece4",lineHeight:1.45,marginBottom:"4px"}}>{a.headline}</div>}
+                            {a.desc&&<div style={{fontSize:"11px",color:"#888",lineHeight:1.5}}>{a.desc.slice(0,120)}{a.desc.length>120?"…":""}</div>}
+                            {a.published&&<div style={{fontSize:"10px",color:"#444",fontFamily:"monospace",marginTop:"5px"}}>{a.published}</div>}
+                          </div>
+                        )):<div style={{textAlign:"center",padding:"30px",color:"#444",fontFamily:"monospace",fontSize:"12px"}}>No news via ESPN.</div>}
+                      </div>
+                    )}
+
+                    {/* Players */}
+                    {viewTab==="players"&&(()=>{
+                      const players=live.players||[];
+                      const positions=["ALL",...[...new Set(players.map(p=>p.pos).filter(Boolean))].sort()];
+                      let displayed=playerPosFilter==="ALL"?players:players.filter(p=>p.pos===playerPosFilter);
+                      if(playerSort==="pos")displayed=[...displayed].sort((a,b)=>(a.pos||"").localeCompare(b.pos||""));
+                      else if(playerSort==="stat")displayed=[...displayed].sort((a,b)=>(parseFloat(String(b.stats?.[0]?.v||"0").replace(/[^0-9.]/g,""))||0)-(parseFloat(String(a.stats?.[0]?.v||"0").replace(/[^0-9.]/g,""))||0));
+                      return(
+                        <div style={{animation:"fadeIn .3s ease"}}>
+                          {players.length>0?(
+                            <div>
+                              <div style={{display:"flex",gap:"5px",flexWrap:"wrap",marginBottom:"8px"}}>
+                                {positions.map(pos=>{const on=playerPosFilter===pos;return<button key={pos} className="sp" onClick={()=>setPlayerPosFilter(pos)} style={{padding:"4px 9px",borderRadius:"16px",border:"1px solid "+(on?ac:"#2a2a2a"),background:on?ac+"22":"#141414",color:on?ac:"#888",fontSize:"10px",fontFamily:"monospace"}}>{pos==="ALL"?"All":getPosition(pos,sp)}</button>;})}
+                              </div>
+                              <div style={{display:"flex",gap:"5px",alignItems:"center",marginBottom:"10px"}}>
+                                <span style={{fontSize:"10px",color:"#555",fontFamily:"monospace"}}>SORT:</span>
+                                {[["default","Roster"],["pos","Position"],["stat","Top Stat ↓"]].map(([k,l])=>{const on=playerSort===k;return<button key={k} className="sp" onClick={()=>setPlayerSort(k)} style={{padding:"4px 9px",borderRadius:"16px",border:"1px solid "+(on?"#c8102e":"#2a2a2a"),background:on?"#c8102e22":"#141414",color:on?"#c8102e":"#888",fontSize:"10px",fontFamily:"monospace"}}>{l}</button>;})}
+                              </div>
+                              <div style={{fontSize:"10px",fontFamily:"monospace",color:"#555",marginBottom:"8px"}}>{displayed.length} of {players.length} players</div>
+                              {playerSort==="pos"?(()=>{
+                                const groups={};
+                                for(const p of displayed){const k=p.pos||"?";if(!groups[k])groups[k]=[];groups[k].push(p);}
+                                return Object.entries(groups).map(([pos,ps])=>(
+                                  <div key={pos} style={{marginBottom:"14px"}}>
+                                    <div style={{fontSize:"10px",fontWeight:"bold",color:ac,fontFamily:"monospace",letterSpacing:"0.1em",marginBottom:"7px",paddingBottom:"5px",borderBottom:"1px solid #1a1a1a"}}>{getPosition(pos,sp)} ({ps.length})</div>
+                                    {ps.map((p,i)=><PlayerCard key={i} p={p} ac={ac} sport={sp}/>)}
+                                  </div>
+                                ));
+                              })():displayed.map((p,i)=><PlayerCard key={i} p={p} ac={ac} sport={sp}/>)}
+                            </div>
+                          ):<div style={{textAlign:"center",padding:"30px",color:"#555",fontFamily:"monospace",fontSize:"12px"}}>No player stats available.</div>}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            ):teamTab==="tips"?(
+              /* Tips */
+              <div style={{animation:"fadeIn .4s ease"}}>
+                {tips.map((sec,i)=>{const open=openTip===i;return(
+                  <div key={i} className="tip" onClick={()=>setOT(open?null:i)} style={{background:"#111",border:"1px solid #252525",borderLeft:open?"3px solid #c8102e":"3px solid transparent",borderRadius:"8px",marginBottom:"8px",overflow:"hidden"}}>
+                    <div style={{padding:"13px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <span style={{fontSize:"14px",fontWeight:"bold",color:"#f0ece4"}}>{sec.icon} {sec.category}</span>
+                      <span style={{color:"#888",fontSize:"18px"}}>{open?"−":"+"}</span>
+                    </div>
+                    {open&&<div style={{padding:"0 16px 16px"}}>
+                      {sec.tips.map((tip,j)=><div key={j} style={{padding:"8px 11px",marginBottom:"5px",background:"#0d0d0d",borderRadius:"6px",fontSize:"13px",lineHeight:1.55,color:"#ddd",display:"flex",gap:"10px"}}>
+                        <span style={{color:"#c8102e",flexShrink:0,fontFamily:"monospace"}}>{String(j+1).padStart(2,"0")}</span>{tip}
+                      </div>)}
+                    </div>}
+                  </div>
+                );})}
+              </div>
+            ):(
+              /* Team Grid */
+              <div style={{animation:"fadeIn .4s ease"}}>
+                <div style={{display:"flex",gap:"8px",marginBottom:"11px",flexWrap:"wrap"}}>
+                  <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search teams..." style={{flex:1,minWidth:"140px",background:"#141414",border:"1px solid #2a2a2a",borderRadius:"8px",padding:"9px 13px",color:"#f0ece4",fontFamily:"'DM Sans',Georgia,sans-serif",fontSize:"13px"}}/>
+                  <button className="sp" onClick={()=>{setFavView(f=>!f);setSearch("");}} style={{padding:"9px 14px",borderRadius:"8px",border:"1px solid "+(favView?"#f59e0b":"#2a2a2a"),background:favView?"#f59e0b22":"#141414",color:favView?"#f59e0b":"#bbb",fontSize:"13px",whiteSpace:"nowrap"}}>
+                    {favView?"⭐":"☆"}{favs.length>0?` (${favs.length})`:""}
+                  </button>
+                </div>
+                <div style={{display:"flex",gap:"5px",flexWrap:"wrap",marginBottom:"12px"}}>
+                  {SPORTS_FILTER.map(s=>{const on=filter===s;const cnt=ALL_TEAMS.filter(t=>t.sport===s).length;return<button key={s} className="sp" onClick={()=>setFilter(s)} style={{padding:"5px 11px",borderRadius:"20px",border:"1px solid "+(on?"#c8102e":"#2a2a2a"),background:on?"#c8102e":"#141414",color:on?"#fff":"#bbb",fontSize:"11px",fontFamily:"monospace"}}>{s}{s!=="ALL"?` ${cnt}`:""}</button>;})}
+                </div>
+                {favView&&favs.length===0&&<div style={{textAlign:"center",padding:"40px",color:"#555",fontSize:"13px",fontStyle:"italic"}}>No favourites yet — tap ☆ on any team to add it here.</div>}
+                <div style={{fontSize:"11px",color:"#444",fontFamily:"monospace",marginBottom:"10px"}}>{filtered.length} teams</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(155px,1fr))",gap:"8px"}}>
+                  {filtered.map(team=>{
+                    const c=cache[team.name];
+                    const isFav=favs.includes(team.name);
+                    return(
+                      <div key={team.name} className="tc" onClick={()=>{pick(team);setTeamTab("teams");}} style={{background:"#111",border:"1.5px solid "+(isFav?"#f59e0b44":"#252525"),borderRadius:"10px",padding:"12px 13px",position:"relative"}}>
+                        {isFav&&<span style={{position:"absolute",top:"7px",right:"8px",fontSize:"11px"}}>⭐</span>}
+                        <div style={{fontSize:"19px",marginBottom:"3px"}}>{team.emoji}</div>
+                        <div style={{fontSize:"12px",fontWeight:"bold",marginBottom:"2px",lineHeight:1.3,color:"#f0ece4",paddingRight:isFav?"16px":"0"}}>{team.name}</div>
+                        <div style={{fontSize:"10px",fontFamily:"monospace",color:"#555"}}>{team.sport}</div>
+                        {c?.record?<div style={{marginTop:"4px",fontSize:"11px",color:team.accent,fontFamily:"monospace",fontWeight:"bold"}}>{c.record}</div>:<div style={{marginTop:"4px",fontSize:"10px",color:"#2a2a2a",fontFamily:"monospace"}}>tap for live stats</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── QUIZ TAB ── */}
+        {appTab==="quiz"&&(
+          <div style={{animation:"fadeIn .4s ease"}}>
+            {!qDone?(
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                  <div style={{fontFamily:"monospace",fontSize:"10px",color:"#888",letterSpacing:"0.1em"}}>QUESTION {qStep+1} OF {quiz.length}</div>
+                  <div style={{display:"flex",gap:"4px"}}>{quiz.map((_,i)=><div key={i} style={{width:"20px",height:"3px",borderRadius:"2px",background:i<=qStep?"#c8102e":"#2a2a2a",transition:"background .3s"}}/>)}</div>
+                </div>
+                <div style={{background:"#111",border:"1px solid #252525",borderRadius:"12px",padding:"22px"}}>
+                  <p style={{fontSize:"16px",fontWeight:"bold",margin:"0 0 16px",lineHeight:1.45,color:"#f0ece4"}}>{quiz[qStep].q}</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                    {quiz[qStep].options.map((opt,i)=><button key={i} className="qo" onClick={()=>doQ(quiz[qStep].bandwagon[i])} style={{background:"#0d0d0d",border:"1px solid #2a2a2a",color:"#ddd",padding:"11px 14px",borderRadius:"7px",textAlign:"left",fontSize:"13px",fontFamily:"'DM Sans',Georgia,sans-serif",lineHeight:1.45,cursor:"pointer"}}>
+                      <span style={{color:"#c8102e",fontFamily:"monospace",marginRight:"10px"}}>{String.fromCharCode(65+i)}.</span>{opt}
+                    </button>)}
+                  </div>
+                </div>
+              </div>
+            ):(()=>{const r=bwLvl();return(
+              <div style={{animation:"fadeIn .5s ease"}}>
+                <div style={{background:"#111",border:"2px solid "+r.color,borderRadius:"12px",padding:"30px",textAlign:"center"}}>
+                  <div style={{fontSize:"44px",marginBottom:"12px"}}>🏆</div>
+                  <div style={{fontSize:"10px",letterSpacing:"0.3em",color:"#888",fontFamily:"monospace",marginBottom:"8px"}}>CERTIFICATION LEVEL</div>
+                  <div style={{fontSize:"24px",fontWeight:"900",color:r.color,marginBottom:"10px"}}>{r.label}</div>
+                  <p style={{color:"#ccc",fontSize:"13px",marginBottom:"18px"}}>{r.desc}</p>
+                  <div style={{display:"inline-block",padding:"5px 16px",background:"#0d0d0d",border:"1px solid "+r.color+"55",borderRadius:"20px",fontFamily:"monospace",fontSize:"11px",color:"#aaa"}}>{qScore}/{quiz.length} bandwagon answers</div>
+                  <div style={{marginTop:"18px"}}>
+                    <button className="sp" onClick={()=>{setQS(0);setQSc(0);setQD(false);}} style={{background:"#c8102e",border:"none",color:"white",padding:"10px 20px",borderRadius:"6px",cursor:"pointer",fontSize:"13px",fontFamily:"'DM Sans',Georgia,sans-serif",fontWeight:"bold"}}>Retake</button>
+                  </div>
+                </div>
+              </div>
+            );})()}
+          </div>
+        )}
+
+        <div style={{textAlign:"center",marginTop:"40px",paddingTop:"16px",borderTop:"1px solid #1a1a1a",fontSize:"10px",color:"#333",fontFamily:"monospace",letterSpacing:"0.08em"}}>
+          FANBASE · {ALL_TEAMS.length} TEAMS · LIVE ESPN · POWERED BY BANDWAGON BOOTCAMP
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
