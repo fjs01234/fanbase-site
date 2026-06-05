@@ -155,27 +155,165 @@ const ALL_TEAMS=[
 
 const SPORTS_FILTER=["ALL","NFL","MLB","NBA","NHL","Soccer","MLS"];
 
-// ── STATIC TEAM DATA ──────────────────────────────────────────────────────────
-const STATIC={
-  "New York Giants":{hotTake:"The Giants signed Odell Beckham Jr. — the prodigal son returns to where it all started.",keyFact:"OBJ met with HC John Harbaugh at the owners meetings and a reunion deal followed — one of the best stories of the 2026 offseason."},
-  "Seattle Seahawks":{hotTake:"The Seahawks are the reigning Super Bowl LX champions. Your team wishes.",keyFact:"Seattle won Super Bowl LX and opens 2026 as defending champions hosting the Patriots on a Wednesday night."},
-  "Kansas City Chiefs":{hotTake:"One healthy offseason and Mahomes reminds the league why he's the GOAT.",keyFact:"Mahomes is rehabbing a knee injury from 2025. The revenge tour starts September 2026."},
-  "New York Knicks":{hotTake:"Brunson averaged 27.8 PPG in 13 playoff games. The Knicks are in the Finals for the first time since 1999.",keyFact:"Mitchell Robinson is playing the NBA Finals with a broken right pinky — wearing a brace and refusing to sit."},
-  "San Antonio Spurs":{hotTake:"Wembanyama averaged 28.4 PPG in the West Finals — one of the best playoff runs by a sophomore ever.",keyFact:"Victor Wembanyama is the most unique player in basketball history. San Antonio is building around him wisely."},
-  "Oklahoma City Thunder":{hotTake:"SGA is the best scorer alive and OKC started 24-1 — tying the 2015-16 Warriors.",keyFact:"OKC tied the all-time best 25-game start in NBA history this season. Shai is the MVP favorite."},
-  "New York Mets":{hotTake:"Juan Soto signed the largest contract in sports history. Owner Steve Cohen is all-in.",keyFact:"The 2024 Mets started 22-33 and made the playoffs. Same record, same month. History can repeat."},
-  "New York Yankees":{hotTake:"The Yankees lead MLB in home runs and Judge is the most feared hitter in baseball.",keyFact:"27 World Series titles — more than any franchise in professional sports history."},
-  "Los Angeles Dodgers":{hotTake:"Back-to-back World Series champs, best ERA in MLB, and Ohtani batting .310. It's not close.",keyFact:"Ohtani hit 54 HR + stole 59 bases in 2024 — the first 50/50 season in MLB history."},
-  "Boston Celtics":{hotTake:"Boston lost a shocking upset but Tatum is healthy and the Celtics will be back.",keyFact:"The Celtics won their 18th championship in 2024 — the most titles in NBA history."},
-  "Vegas Golden Knights":{hotTake:"Vegas fired their coach mid-season, swept the Presidents' Trophy winners, and are in the Cup Final.",keyFact:"Vegas reached the Cup Final in their very first season (2017-18) — the greatest expansion debut in pro sports history."},
-  "Carolina Hurricanes":{hotTake:"Carolina eliminated Montreal and faces Vegas in the Stanley Cup Final starting Tuesday.",keyFact:"The Hurricanes have made the playoffs 8 straight years under Rod Brind'Amour — one of the great coaching runs ever."},
+// ── HOT TAKES SYSTEM ─────────────────────────────────────────────────────────
+// Each team has a pool of takes that rotate daily. History is stored in localStorage.
+const HOT_TAKES_POOL = {
+  "New York Giants": [
+    "The Giants signed Odell Beckham Jr. — the prodigal son returns to where it all started.",
+    "The Giants host Dallas on SNF in Week 1. Opening night, MetLife, statement game.",
+    "Two words: Malik Nabers. The most electric rookie receiver in years is already a Giant.",
+    "Brian Daboll has them building something real. The culture shift is real, not just talk.",
+    "Daniel Jones who? The Giants have moved on and the future is brighter for it.",
+  ],
+  "Seattle Seahawks": [
+    "The Seahawks are the reigning Super Bowl LX champions. Your team wishes.",
+    "Geno Smith just won a Super Bowl. Let that sink in for every team that ever cut him.",
+    "Seattle opens 2026 as defending champs hosting the Patriots. This is their moment.",
+    "The 12s never stopped believing. Now the whole league has to bow to the Pacific Northwest.",
+    "Back-to-back? The roster is intact. The hunger is real. Don't sleep on Seattle.",
+  ],
+  "Kansas City Chiefs": [
+    "One healthy offseason and Mahomes reminds the league why he's the GOAT.",
+    "Six Super Bowl appearances in seven years. That is the standard. Full stop.",
+    "They went 6-11 and the whole league exhaled. Enjoy it — the Chiefs are coming back.",
+    "Mahomes with a revenge chip is the scariest thing in sports. The 2026 tour starts now.",
+    "Andy Reid has never had back-to-back losing seasons. History says the Chiefs bounce back.",
+  ],
+  "New York Knicks": [
+    "Brunson averaged 27.8 PPG in 13 playoff games. The Knicks are in the Finals for the first time since 1999.",
+    "Jalen Brunson is a top-5 player in basketball right now. New York finally has their guy.",
+    "Mitchell Robinson playing the Finals with a broken pinky. That is Knicks DNA.",
+    "The Garden is the loudest building in sports right now. Madison Square Garden is BACK.",
+    "Leon Rose built this quietly. No drama, just winning. The patient approach paid off.",
+  ],
+  "San Antonio Spurs": [
+    "Wembanyama averaged 28.4 PPG in the West Finals. One of the best sophomore runs ever.",
+    "Wembanyama is 7'4 with guard skills, 9-foot wingspan, and the footwork of a ballet dancer. He is not real.",
+    "Pop built one dynasty. Gregg Popovich's legacy now includes drafting the greatest prospect since LeBron.",
+    "The Spurs didn't tank for Wem — they planned for him. The most patient rebuild in NBA history paid off.",
+    "Wembanyama vs the world is must-watch television every single night.",
+  ],
+  "Oklahoma City Thunder": [
+    "SGA is the best scorer alive and OKC started 24-1 — tying the 2015-16 Warriors.",
+    "OKC traded away superstars and collected picks for years. The patience is now paying historic dividends.",
+    "Shai Gilgeous-Alexander deserves the MVP. The case is ironclad. Don't argue with the box score.",
+    "The youngest team with the best record. OKC is building a dynasty in real time.",
+    "Chet Holmgren figured it out. Isaiah Hartenstein is elite. The supporting cast is legit.",
+  ],
+  "New York Mets": [
+    "Juan Soto signed the largest contract in sports history. Steve Cohen is playing a different game.",
+    "The 2024 Mets started 22-33 and made the playoffs. Same record, same month. History can repeat.",
+    "Citi Field is loud again. The Mets are relevant again. Don't look away.",
+    "Lindor is the best shortstop in baseball when healthy. The Mets need him back now.",
+    "Steve Cohen will spend whatever it takes. The question is whether the front office can build around the spend.",
+  ],
+  "New York Yankees": [
+    "The Yankees lead MLB in home runs and Judge is the most feared hitter in baseball.",
+    "27 World Series titles. When the Yankees win, it's expected. When they lose, it's a crisis.",
+    "Aaron Judge is the American League's version of Superman. No one hits the ball harder.",
+    "The Evil Empire is spending again and the AL East is terrified.",
+    "No team in sports has more pressure to win every single year. The Yankees embrace it.",
+  ],
+  "Los Angeles Dodgers": [
+    "Back-to-back World Series champs, best ERA in MLB, and Ohtani batting .310. It's not close.",
+    "Ohtani is the greatest baseball player who ever lived. That is not hyperbole anymore.",
+    "The Dodgers payroll is a cheat code. But credit where it's due — they actually develop talent too.",
+    "Freddie Freeman's 2024 World Series walk-off grand slam is the greatest clutch hit of the generation.",
+    "The Dodgers are what happens when a market the size of LA decides to actually try.",
+  ],
+  "Boston Celtics": [
+    "Boston lost a shocking upset but Tatum is healthy and the Celtics will be back.",
+    "18 championships. The most in NBA history. When the Celtics are good they are very, very good.",
+    "Jayson Tatum is 27 years old and already has a ring. The best years might still be ahead.",
+    "Joe Mazzulla is a coaching genius who gets no credit. The Celtics system is the best in basketball.",
+    "Brown and Tatum are the best wing duo in the NBA. No roster is built to stop both of them.",
+  ],
+  "Vegas Golden Knights": [
+    "Vegas fired their coach mid-season, swept the Presidents' Trophy winners, and are in the Cup Final.",
+    "The Golden Knights reached the Cup Final in Year 1. They've never really stopped contending.",
+    "Mark Stone is the best two-way forward in hockey and half the league doesn't even know his name.",
+    "Vegas was supposed to be a novelty expansion team. They turned into the NHL's most feared franchise.",
+    "T-Mobile Arena is one of the loudest buildings in sports. The Golden Knights faithful are real.",
+  ],
+  "Carolina Hurricanes": [
+    "Carolina eliminated Montreal and faces Vegas in the Stanley Cup Final starting Tuesday.",
+    "Rod Brind'Amour has made the playoffs 8 straight years. That is generational coaching.",
+    "The 'bunch of jerks' have become the most respected team in the NHL. The culture is real.",
+    "Sebastian Aho is criminally underrated. Top-5 center in hockey and he barely gets national attention.",
+    "Carolina plays the hardest style in the league. They grind you down and then finish you off.",
+  ],
 };
-function getStatic(name){
-  return STATIC[name]||{
-    hotTake:`${name} — tap Stats or Players for live data.`,
-    keyFact:"Full season stats and roster data powered by ESPN."
-  };
+
+// Default pools for teams without custom takes
+const DEFAULT_POOL = (name, sport) => [
+  `${name} — tap Stats or Players to see what the numbers say.`,
+  `Every bandwagon needs a driver. Yours starts here with ${name}.`,
+  `${name} fans have seen it all. Now it's your turn to pretend you have too.`,
+  `The ${sport} season is long. ${name} will give you plenty to talk about.`,
+];
+
+// Hot takes history management via localStorage
+const HISTORY_KEY = "fanbase_hottakes_history";
+const TODAY = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+function getHotTakesData() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
 }
+
+function saveHotTakesData(data) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(data)); } catch {}
+}
+
+function getTodaysTake(teamName, sport) {
+  const pool = HOT_TAKES_POOL[teamName] || DEFAULT_POOL(teamName, sport);
+  const data = getHotTakesData();
+  const teamData = data[teamName] || { history: [], lastDate: null, index: -1 };
+
+  // If we already picked a take today, return it
+  if (teamData.lastDate === TODAY) {
+    return { take: pool[teamData.index % pool.length], history: teamData.history, isNew: false };
+  }
+
+  // Pick next take in rotation (skip ones already used today)
+  const nextIndex = (teamData.index + 1) % pool.length;
+  const take = pool[nextIndex];
+
+  // Add yesterday's take to history if there was one
+  const newHistory = teamData.lastDate && teamData.index >= 0
+    ? [{ date: teamData.lastDate, take: pool[teamData.index % pool.length] }, ...teamData.history].slice(0, 14)
+    : teamData.history;
+
+  // Save
+  data[teamName] = { history: newHistory, lastDate: TODAY, index: nextIndex };
+  saveHotTakesData(data);
+
+  return { take, history: newHistory, isNew: true };
+}
+
+function getStatic(name, sport) {
+  const { take, history, isNew } = getTodaysTake(name, sport || "");
+  const base = STATIC_FACTS[name] || { keyFact: "Full season stats and roster data powered by ESPN." };
+  return { hotTake: take, keyFact: base.keyFact, hotTakeHistory: history, isNewTake: isNew };
+}
+
+// Key facts (separate from rotating hot takes)
+const STATIC_FACTS = {
+  "New York Giants":       { keyFact: "OBJ met with HC John Harbaugh at the owners meetings and a reunion deal followed — one of the best stories of the 2026 offseason." },
+  "Seattle Seahawks":      { keyFact: "Seattle won Super Bowl LX and opens 2026 as defending champions hosting the Patriots on a Wednesday night." },
+  "Kansas City Chiefs":    { keyFact: "Mahomes is rehabbing a knee injury from 2025. The Chiefs went 6-11 — their worst season under Andy Reid. The revenge tour starts September 2026." },
+  "New York Knicks":       { keyFact: "Mitchell Robinson is playing the NBA Finals with a broken right pinky — wearing a brace and refusing to sit." },
+  "San Antonio Spurs":     { keyFact: "Victor Wembanyama is the most unique player in basketball history — 7'4 with guard skills, a 9-foot wingspan, and elite footwork." },
+  "Oklahoma City Thunder": { keyFact: "OKC started 24-1 this season — tying the 2015-16 Warriors for the best 25-game start in NBA history." },
+  "New York Mets":         { keyFact: "Juan Soto's $765M contract is the largest in sports history. Owner Steve Cohen is playing a completely different financial game." },
+  "New York Yankees":      { keyFact: "27 World Series titles — more than any franchise in professional sports history." },
+  "Los Angeles Dodgers":   { keyFact: "Ohtani hit 54 HR + stole 59 bases in 2024 — the first 50/50 season in MLB history." },
+  "Boston Celtics":        { keyFact: "The Celtics won their 18th championship in 2024 — the most titles in NBA history." },
+  "Vegas Golden Knights":  { keyFact: "Vegas reached the Cup Final in their very first season (2017-18) — the greatest expansion debut in pro sports history." },
+  "Carolina Hurricanes":   { keyFact: "The Hurricanes have made the playoffs 8 straight years under Rod Brind'Amour — one of the great coaching runs in NHL history." },
+};
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function getPosition(pos, sport){
@@ -547,7 +685,7 @@ function App(){
   const poolAll=favView?ALL_TEAMS.filter(t=>favs.includes(t.name)):ALL_TEAMS;
   const filtered=poolAll.filter(t=>(filter==="ALL"||t.sport===filter)&&(!q||t.name.toLowerCase().includes(q)));
   const live=sel?cache[sel.name]:null;
-  const ctx=sel?getStatic(sel.name):null;
+  const ctx=sel?getStatic(sel.name, sel.espn?.split("/")?.[0]):null;
   const ac=sel?.accent||"#c8102e";
   const tc=sel?.color||"#c8102e";
   const sp=sel?.espn?.split("/")?.[0]||"";
@@ -660,11 +798,35 @@ function App(){
                     {/* Hot Takes */}
                     {viewTab==="hottakes"&&(
                       <div style={{animation:"fadeIn .3s ease"}}>
+                        {/* Today's take */}
                         <div style={{background:tc+"15",border:"1px solid "+tc+"35",borderRadius:"10px",padding:"16px 18px",marginBottom:"9px"}}>
-                          <Lbl>🔥 YOUR READY-MADE HOT TAKE</Lbl>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+                            <Lbl>🔥 TODAY'S HOT TAKE</Lbl>
+                            <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                              {ctx.isNewTake&&<span style={{fontSize:"9px",fontFamily:"monospace",background:"#c8102e",color:"#fff",padding:"2px 6px",borderRadius:"4px",letterSpacing:"0.05em"}}>NEW TODAY</span>}
+                              <span style={{fontSize:"9px",fontFamily:"monospace",color:"#555"}}>{new Date().toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span>
+                            </div>
+                          </div>
                           <div style={{fontSize:"15px",fontStyle:"italic",color:"#f0ece4",lineHeight:1.65}}>"{ctx.hotTake}"</div>
                         </div>
-                        <C><Lbl>💡 DROP THIS TO SOUND LEGIT</Lbl><div style={{fontSize:"13px",color:"#ccc",lineHeight:1.6}}>{ctx.keyFact}</div></C>
+
+                        {/* Key fact */}
+                        <C s={{marginBottom:"9px"}}><Lbl>💡 DROP THIS TO SOUND LEGIT</Lbl><div style={{fontSize:"13px",color:"#ccc",lineHeight:1.6}}>{ctx.keyFact}</div></C>
+
+                        {/* History */}
+                        {ctx.hotTakeHistory&&ctx.hotTakeHistory.length>0&&(
+                          <div>
+                            <div style={{fontSize:"9px",fontFamily:"monospace",color:"#555",letterSpacing:"0.12em",marginBottom:"8px",marginTop:"14px",paddingTop:"12px",borderTop:"1px solid #1a1a1a"}}>📅 PREVIOUS HOT TAKES</div>
+                            <div style={{display:"flex",flexDirection:"column",gap:"6px"}}>
+                              {ctx.hotTakeHistory.map((item,i)=>(
+                                <div key={i} style={{background:"#0d0d0d",border:"1px solid #1a1a1a",borderRadius:"8px",padding:"10px 12px"}}>
+                                  <div style={{fontSize:"9px",fontFamily:"monospace",color:"#555",marginBottom:"4px"}}>{new Date(item.date).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}</div>
+                                  <div style={{fontSize:"12px",fontStyle:"italic",color:"#888",lineHeight:1.5}}>"{item.take}"</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
